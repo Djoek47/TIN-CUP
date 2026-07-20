@@ -37,5 +37,10 @@ pnpm-debug.log*
 .vite/
 .figma/
 
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+
 # TypeScript
 *.tsbuildinfo

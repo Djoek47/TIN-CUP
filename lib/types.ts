@@ -28,11 +28,14 @@ export type Athlete = {
   position: string | null
   jersey: number | null
   country: string | null
+  club: string | null
   age: number | null
   bio: string | null
   color: string
   is_featured: boolean
+  trend: number
   stats: Record<string, number | string>
+  league?: Pick<League, "id" | "name" | "abbr" | "sport" | "color"> | null
 }
 
 export type Game = {
