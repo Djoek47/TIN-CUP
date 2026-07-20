@@ -1,9 +1,11 @@
+import { Platform } from "react-native"
+
 export const colors = {
   // backgrounds
   bg: "#0b0710",
   bgElevated: "#15101c",
-  card: "#181320",
-  cardAlt: "#1f1830",
+  surface: "#181320",
+  surface2: "#1f1830",
   border: "#2a2136",
   // brand
   pink: "#ff2d6e",
@@ -15,9 +17,9 @@ export const colors = {
   amber: "#f5a623",
   // text
   text: "#f6f1f8",
-  textMuted: "#b3a8c0",
+  textDim: "#b3a8c0",
   textFaint: "#7d7290",
-  // misc
+  // status
   live: "#ff2d6e",
   white: "#ffffff",
   black: "#000000",
@@ -28,7 +30,7 @@ export const gradients = {
   brandDeep: ["#c9165a", "#ff2d6e"] as const,
   avatar: ["#ff2d6e", "#a04bff", "#4d9fff"] as const,
   ai: ["#ff2d6e", "#e6c27a"] as const,
-  hero: ["transparent", "rgba(11,7,16,0.2)", "rgba(11,7,16,0.95)"] as const,
+  hero: ["transparent", "rgba(11,7,16,0.2)", "rgba(11,7,16,0.96)"] as const,
 }
 
 export const radius = {
@@ -49,22 +51,24 @@ export const spacing = {
 }
 
 export const fonts = {
-  // Playfair Display = elegant fashion serif for headings (matches Figma wordmark vibe)
-  display: "PlayfairDisplay_700Bold",
-  displayItalic: "PlayfairDisplay_600SemiBold_Italic",
+  // Playfair Display = elegant fashion serif for headings (matches Fanissima wordmark)
+  serif: "PlayfairDisplay_600SemiBold",
+  serifBold: "PlayfairDisplay_700Bold",
   // Inter for clean UI body
   sans: "Inter_400Regular",
   sansMedium: "Inter_500Medium",
   sansSemibold: "Inter_600SemiBold",
   sansBold: "Inter_700Bold",
+  // system monospace for stats/numbers
+  mono: Platform.select({ ios: "Menlo", android: "monospace", default: "ui-monospace" }) as string,
 }
 
 export const sportEmoji: Record<string, string> = {
   Football: "⚽",
   Tennis: "🎾",
   Basketball: "🏀",
-  Athletics: "🏃‍♀️",
-  Gymnastics: "🤸‍♀️",
+  Athletics: "🏃",
+  Gymnastics: "🤸",
   Volleyball: "🏐",
 }
 

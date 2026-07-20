@@ -141,11 +141,15 @@ export async function toggleVote(postId: string, hasVoted: boolean) {
   if (!uid) throw new Error("Not signed in")
   if (hasVoted) {
     await supabase.from("post_votes").delete().eq("post_id", postId).eq("user_id", uid)
-    await supabase.rpc("decrement_post_upvotes", { p_id: postId })
+    await supabase.rpc("adjust_post_upvotes", { p_post_id: postId, p_delta: -1 })
   } else {
     await supabase.from("post_votes").insert({ post_id: postId, user_id: uid })
-    await supabase.rpc("increment_post_upvotes", { p_id: postId })
+    await supabase.rpc("adjust_post_upvotes", { p_post_id: postId, p_delta: 1 })
   }
+}
+
+export async function likeHighlight(highlightId: string, delta: number) {
+  await supabase.rpc("adjust_highlight_likes", { p_highlight_id: highlightId, p_delta: delta })
 }
 
 /* ---------- Follows ---------- */
