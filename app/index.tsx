@@ -39,7 +39,7 @@ export default function Splash() {
       } else if (!profile?.onboarded) {
         router.replace("/(onboarding)/choose-fate")
       } else {
-        router.replace("/(app)/main-street")
+        router.replace("/(app)")
       }
     }, 1200)
     return () => clearTimeout(t)

@@ -12,6 +12,7 @@ export default function AppTabsLayout() {
         tabBarStyle: {
           backgroundColor: color.bg.surface,
           borderTopColor: color.border.subtle,
+          borderTopWidth: 1,
           height: 84,
           paddingTop: 8,
         },
@@ -20,31 +21,31 @@ export default function AppTabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="main-street"
+        name="index"
         options={{
           title: "Main St",
           tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="home-variant" size={size} color={c} />,
         }}
       />
       <Tabs.Screen
-        name="madness"
+        name="wallet"
         options={{
-          title: "Madness",
-          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="cards-playing-outline" size={size} color={c} />,
+          title: "Tin Cup",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="cup" size={size} color={c} />,
         }}
       />
       <Tabs.Screen
-        name="lobbies"
+        name="notifications"
         options={{
-          title: "Lobbies",
-          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="door-sliding" size={size} color={c} />,
+          title: "Saloon",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="bell-ring-outline" size={size} color={c} />,
         }}
       />
       <Tabs.Screen
-        name="poster"
+        name="profile"
         options={{
-          title: "Poster",
-          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="account-box-outline" size={size} color={c} />,
+          title: "Profile",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="account-circle-outline" size={size} color={c} />,
         }}
       />
     </Tabs>
