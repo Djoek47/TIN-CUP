@@ -1,75 +1,84 @@
-export type Fate = "drifter" | "lord"
+export type Role = "drifter" | "lord"
+
+export type AvatarConfig = {
+  face?: string
+  hair?: string
+  rags?: string
+  cup?: string
+  quirk?: string
+  hat?: string
+  coat?: string
+  crown?: boolean
+}
 
 export interface Profile {
   id: string
-  handle: string | null
-  display_name: string | null
-  fate: Fate | null
-  title: string | null
-  hat: string | null
-  face: string | null
-  accent: string | null
-  coins: number
-  balance_cents: number
+  handle: string
+  outlaw_name: string
+  role: Role
+  title: string
+  level: number
+  xp: number
+  coin_balance: number
+  coin_dust: number
+  avatar: AvatarConfig
   onboarded: boolean
-  stripe_customer_id: string | null
   created_at: string
 }
-
-export type BegStatus = "open" | "funded" | "closed"
 
 export interface Beg {
   id: string
   author_id: string
   title: string
-  story: string | null
-  goal_cents: number
-  raised_cents: number
-  backers: number
-  status: BegStatus
-  image_url: string | null
+  story: string
+  category: string
+  goal_coins: number | null
+  raised_coins: number
+  gift_count: number
+  status: "live" | "expired" | "flagged"
   created_at: string
-  // joined author profile
-  author?: Pick<Profile, "id" | "handle" | "display_name" | "title" | "fate" | "face" | "hat" | "accent">
+  expires_at: string
+  // joined
+  author?: Pick<Profile, "id" | "handle" | "outlaw_name" | "title" | "role" | "avatar">
 }
-
-export type Spectacle = "coins" | "goldRush" | "cannon"
 
 export interface Gift {
   id: string
   beg_id: string | null
   sender_id: string
   recipient_id: string
-  amount_cents: number
   coins: number
-  message: string | null
-  spectacle: Spectacle
+  tier: GiftTier
   created_at: string
-  sender?: Pick<Profile, "id" | "handle" | "display_name" | "title" | "fate" | "face">
+  sender?: Pick<Profile, "handle" | "outlaw_name" | "title" | "role">
 }
 
-export type LedgerKind = "deposit" | "cashout" | "gift_sent" | "gift_received" | "bonus"
+export type GiftTier = "nickel" | "small" | "medium" | "large" | "legendary"
+
+export type LedgerType =
+  | "deposit"
+  | "cashout"
+  | "gift_sent"
+  | "gift_received"
+  | "fee"
+  | "dust"
 
 export interface LedgerEntry {
   id: string
   user_id: string
-  kind: LedgerKind
-  amount_cents: number // signed
-  balance_after_cents: number
-  description: string | null
-  ref_id: string | null
+  type: LedgerType
+  coins: number // signed
+  fee_coins: number
+  memo: string
   created_at: string
 }
 
-export type NotificationKind = "gift" | "deposit" | "cashout" | "general" | "system"
-
-export interface AppNotification {
+export interface Notification {
   id: string
   user_id: string
-  kind: NotificationKind
+  kind: "gift" | "system" | "streak" | "ascension" | "deposit" | "cashout"
   title: string
-  body: string | null
-  data: Record<string, any> | null
+  body: string
   read: boolean
   created_at: string
 }
