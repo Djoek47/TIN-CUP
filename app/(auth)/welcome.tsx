@@ -5,10 +5,21 @@ import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
+import { useAuth } from "@/providers/AuthProvider"
 import { color, space } from "@/theme/tokens"
 
 export default function Welcome() {
   const router = useRouter()
+  const { connectWallet, loading } = useAuth()
+
+  const handleConnectWallet = async () => {
+    try {
+      await connectWallet()
+      router.replace("/(onboarding)/choose-fate")
+    } catch (e) {
+      console.log("[v0] Wallet connection failed:", e)
+    }
+  }
 
   return (
     <Screen padded={false} edges={["bottom"]}>
@@ -36,18 +47,21 @@ export default function Welcome() {
 
           <View style={styles.bottom}>
             <Button
-              title="Walk into town"
-              onPress={() => router.replace("/(app)/main-street")}
-              icon={<MaterialCommunityIcons name="gate" size={20} color={color.text.inverse} />}
-            />
+              onPress={handleConnectWallet}
+              loading={loading}
+              size="large"
+            >
+              🔗 Connect Wallet
+            </Button>
             <Txt variant="caption" color={color.text.tertiary} center style={styles.note}>
-              Look around free. No account till you touch money.
+              Sign in with MetaMask, Rainbow, or any Web3 wallet on Polygon Mumbai testnet.
             </Txt>
             <Button
-              title="I've been here before"
               variant="ghost"
-              onPress={() => router.push("/(auth)/sign-in")}
-            />
+              onPress={() => router.replace("/(app)")}
+            >
+              Browse as guest
+            </Button>
           </View>
         </LinearGradient>
       </ImageBackground>

@@ -1,121 +1,185 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"
-import { ThirdwebSDK } from "@thirdweb-dev/sdk"
+import { ethers } from "ethers"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { supabase } from "@/lib/supabase"
+import { RPC_URL } from "@/lib/thirdweb"
 import { Profile } from "@/lib/types"
 
-const WALLET_KEY = "tinecup_wallet_address"
-const PROJECT_WALLET = "0x742d35Cc6634C0532925a3b844Bc7e7595f0bEb"
+const WALLET_KEY = "tincup_wallet_address"
 
 interface AuthState {
   wallet: string | null
+  provider: ethers.providers.JsonRpcProvider | null
+  signer: ethers.Signer | null
   profile: Profile | null
   loading: boolean
-  isLord: boolean
-  connectWallet: () => Promise<{ error?: string }>
+  configured: boolean
+  session: boolean
+  connectWallet: () => Promise<void>
   disconnectWallet: () => Promise<void>
   refreshProfile: () => Promise<void>
-  updateProfile: (patch: Partial<Profile>) => Promise<{ error?: string }>
+  updateProfile: (patch: Partial<Profile>) => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [wallet, setWallet] = useState<string | null>(null)
+  const [provider, setProvider] = useState<ethers.providers.JsonRpcProvider | null>(null)
+  const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [configured, setConfigured] = useState(false)
 
-  const loadProfile = useCallback(async (walletAddress: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", walletAddress.toLowerCase())
-      .maybeSingle()
+  // Initialize provider and restore wallet from storage on mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // Set up read-only provider for Polygon Mumbai testnet
+        const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL)
+        setProvider(rpcProvider)
 
-    if (data) {
-      setProfile(data as Profile)
-    } else if (error?.code !== "PGRST116") {
-      console.log("[v0] Profile load error:", error)
-    } else {
-      // Profile doesn't exist yet, create it
-      const newProfile: Partial<Profile> = {
-        id: walletAddress.toLowerCase(),
-        display_name: walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4),
-        handle: "outlaw_" + walletAddress.slice(2, 10),
-        coins: 0,
-        balance_cents: 0,
-        onboarded: false,
-      }
-      const { data: created } = await supabase.from("profiles").insert(newProfile).select("*").maybeSingle()
-      if (created) {
-        setProfile(created as Profile)
+        // Restore wallet from storage if available
+        const storedWallet = await AsyncStorage.getItem(WALLET_KEY)
+        if (storedWallet) {
+          setWallet(storedWallet.toLowerCase())
+          await loadProfile(storedWallet.toLowerCase())
+        }
+      } catch (e) {
+        console.log("[v0] Auth init error:", e)
+      } finally {
+        setConfigured(true)
+        setLoading(false)
       }
     }
+
+    init()
   }, [])
+
+  const loadProfile = useCallback(async (walletAddress: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", walletAddress.toLowerCase())
+        .maybeSingle()
+
+      if (data) {
+        setProfile(data as Profile)
+      } else if (!error) {
+        // Profile doesn't exist yet - will be created after wallet connect
+        setProfile(null)
+      }
+    } catch (e) {
+      console.log("[v0] Load profile error:", e)
+    }
+  }, [])
+
+  const connectWallet = useCallback(async () => {
+    try {
+      // Check for Web3 provider (MetaMask, etc.)
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        const ethereum = (window as any).ethereum
+
+        // Request account access
+        const accounts = await ethereum.request({
+          method: "eth_requestAccounts",
+        })
+
+        const address = accounts[0].toLowerCase()
+
+        // Create signer from the wallet
+        const web3Provider = new ethers.providers.Web3Provider(ethereum)
+        const walletSigner = web3Provider.getSigner()
+
+        setWallet(address)
+        setSigner(walletSigner)
+        setProvider(web3Provider)
+
+        // Save to storage
+        await AsyncStorage.setItem(WALLET_KEY, address)
+
+        // Load or create profile
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", address)
+          .maybeSingle()
+
+        if (!existingProfile) {
+          // Create new profile for this wallet
+          const handle = `outlaw_${address.slice(2, 10)}`
+          const { data: newProfile, error } = await supabase
+            .from("profiles")
+            .insert({
+              id: address,
+              handle,
+              display_name: address.slice(0, 6),
+              fate: "drifter",
+              hat: "stetson",
+              face: "🤠",
+              accent: "gold",
+              coins: 0,
+              balance_cents: 0,
+              is_lord: false,
+              onboarded: false,
+            })
+            .select()
+            .single()
+
+          if (!error && newProfile) {
+            setProfile(newProfile as Profile)
+          }
+        } else {
+          setProfile(existingProfile as Profile)
+        }
+      } else {
+        throw new Error("No Web3 wallet detected. Install MetaMask or use a wallet-enabled browser.")
+      }
+    } catch (e: any) {
+      console.log("[v0] Wallet connect error:", e)
+      throw e
+    }
+  }, [])
+
+  const disconnectWallet = useCallback(async () => {
+    setWallet(null)
+    setSigner(null)
+    setProfile(null)
+    await AsyncStorage.removeItem(WALLET_KEY)
+  }, [])
+
+  const updateProfile = useCallback(
+    async (patch: Partial<Profile>) => {
+      if (!wallet) throw new Error("Not connected to wallet")
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", wallet)
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) setProfile(data as Profile)
+    },
+    [wallet]
+  )
 
   const refreshProfile = useCallback(async () => {
     if (wallet) await loadProfile(wallet)
   }, [wallet, loadProfile])
 
-  // Load wallet from storage on mount
-  useEffect(() => {
-    const initWallet = async () => {
-      const stored = await AsyncStorage.getItem(WALLET_KEY)
-      if (stored) {
-        setWallet(stored)
-        await loadProfile(stored)
-      }
-      setLoading(false)
-    }
-
-    initWallet()
-  }, [loadProfile])
-
-  const connectWallet = useCallback(async () => {
-    try {
-      // In production, this would use WalletConnect or a mobile wallet connector
-      // For now, we'll use a placeholder that demonstrates the flow
-      // You would integrate with MetaMask mobile, Rainbow, etc.
-      console.log("[v0] Wallet connection triggered")
-      return { error: "Wallet connector not yet implemented. Use placeholder for testing." }
-    } catch (e: any) {
-      return { error: e?.message ?? "Failed to connect wallet" }
-    }
-  }, [])
-
-  const disconnectWallet = useCallback(async () => {
-    await AsyncStorage.removeItem(WALLET_KEY)
-    setWallet(null)
-    setProfile(null)
-  }, [])
-
-  const updateProfile = useCallback(
-    async (patch: Partial<Profile>) => {
-      if (!wallet) return { error: "Not connected to wallet." }
-      const { data, error } = await supabase
-        .from("profiles")
-        .update(patch)
-        .eq("id", wallet.toLowerCase())
-        .select("*")
-        .maybeSingle()
-
-      if (!error && data) {
-        setProfile(data as Profile)
-      }
-      return { error: error?.message }
-    },
-    [wallet],
-  )
-
-  const isLord = profile?.fate === "lord"
-
   return (
     <AuthContext.Provider
       value={{
         wallet,
+        provider,
+        signer,
         profile,
         loading,
-        isLord,
+        configured,
+        session: !!wallet,
         connectWallet,
         disconnectWallet,
         refreshProfile,

@@ -1,28 +1,59 @@
 import { useState } from "react"
-import { View, ScrollView, Pressable } from "react-native"
+import { View, ScrollView, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { useAuth } from "@/providers/AuthProvider"
+import { supabase } from "@/lib/supabase"
+import { sendUsdt, PROJECT_WALLET } from "@/lib/thirdweb"
 import { color, space } from "@/theme/tokens"
 
 export default function ChooseFate() {
   const router = useRouter()
-  const { profile, updateProfile } = useAuth()
+  const { profile, wallet, signer, updateProfile } = useAuth()
   const [selected, setSelected] = useState<"drifter" | "lord" | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const drifterDescription = "Free entry. No buy-in. Just guts and glory. Beg for spare coins or gift to strangers."
-  const lordDescription = "Pay $100 to join the Monarch's Circle. Your gifts land heavier. Earn a cut on every coin that flows through the gulch."
+  const lordDescription = "Pay $100 USDT to join the Monarch's Circle. Your gifts land heavier. Earn a cut on every coin that flows through the gulch."
 
   const handleConfirm = async () => {
-    if (!selected) return
+    if (!selected || !wallet || !profile?.id) {
+      setError("Wallet not connected")
+      return
+    }
+
     setLoading(true)
+    setError("")
+
     try {
-      await updateProfile({ fate: selected })
+      if (selected === "lord") {
+        // Process $100 USDT payment to project wallet
+        if (!signer) throw new Error("No signer available")
+        const txHash = await sendUsdt(signer, PROJECT_WALLET, 10000) // $100 USD = 10,000 cents
+        
+        // Record in Supabase for history
+        await supabase.from("ledger_entries").insert({
+          user_id: wallet,
+          kind: "deposit",
+          amount_cents: 10000,
+          balance_after_cents: 0,
+          description: `Lord membership payment: ${txHash}`,
+        })
+      }
+
+      await updateProfile({ 
+        fate: selected,
+        is_lord: selected === "lord"
+      })
       router.push("/(onboarding)/create")
+    } catch (e: any) {
+      console.log("[v0] Choose fate error:", e)
+      setError(e.message || "Transaction failed")
+      Alert.alert("Error", e.message || "Failed to complete transaction")
     } finally {
       setLoading(false)
     }
@@ -37,6 +68,11 @@ export default function ChooseFate() {
         <Txt variant="bodyM" color={color.text.secondary} center style={{ marginTop: space[3] }}>
           You&apos;re in the Gulch now. Pick your way.
         </Txt>
+        {error && (
+          <Card style={{ backgroundColor: color.action.danger, marginTop: space[4], padding: space[3] }}>
+            <Txt variant="bodyS" color={color.text.inverse}>{error}</Txt>
+          </Card>
+        )}
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} scrollEventThrottle={16} style={{ marginVertical: space[6] }}>
