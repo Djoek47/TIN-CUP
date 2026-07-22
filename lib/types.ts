@@ -1,28 +1,18 @@
-export type Role = "drifter" | "lord"
-
-export type AvatarConfig = {
-  face?: string
-  hair?: string
-  rags?: string
-  cup?: string
-  quirk?: string
-  hat?: string
-  coat?: string
-  crown?: boolean
-}
+export type Fate = "drifter" | "lord"
 
 export interface Profile {
   id: string
+  display_name?: string
   handle: string
-  outlaw_name: string
-  role: Role
-  title: string
-  level: number
-  xp: number
-  coin_balance: number
-  coin_dust: number
-  avatar: AvatarConfig
+  fate?: Fate
+  title?: string
+  hat: string
+  face: string
+  accent: string
+  coins: number
+  balance_cents: number
   onboarded: boolean
+  stripe_customer_id?: string
   created_at: string
 }
 
@@ -30,55 +20,50 @@ export interface Beg {
   id: string
   author_id: string
   title: string
-  story: string
-  category: string
-  goal_coins: number | null
-  raised_coins: number
-  gift_count: number
-  status: "live" | "expired" | "flagged"
+  story?: string
+  goal_cents: number
+  raised_cents: number
+  backers: number
+  status: "open" | "funded" | "closed"
+  image_url?: string
   created_at: string
-  expires_at: string
-  // joined
-  author?: Pick<Profile, "id" | "handle" | "outlaw_name" | "title" | "role" | "avatar">
+  author?: Profile
 }
 
 export interface Gift {
   id: string
-  beg_id: string | null
+  beg_id?: string
   sender_id: string
   recipient_id: string
+  amount_cents: number
   coins: number
-  tier: GiftTier
+  message?: string
+  spectacle: string
   created_at: string
-  sender?: Pick<Profile, "handle" | "outlaw_name" | "title" | "role">
+  sender?: Profile
+  recipient?: Profile
 }
 
-export type GiftTier = "nickel" | "small" | "medium" | "large" | "legendary"
-
-export type LedgerType =
-  | "deposit"
-  | "cashout"
-  | "gift_sent"
-  | "gift_received"
-  | "fee"
-  | "dust"
+export type LedgerKind = "deposit" | "cashout" | "gift_sent" | "gift_received" | "bonus"
 
 export interface LedgerEntry {
   id: string
   user_id: string
-  type: LedgerType
-  coins: number // signed
-  fee_coins: number
-  memo: string
+  kind: LedgerKind
+  amount_cents: number
+  balance_after_cents: number
+  description?: string
+  ref_id?: string
   created_at: string
 }
 
 export interface Notification {
   id: string
   user_id: string
-  kind: "gift" | "system" | "streak" | "ascension" | "deposit" | "cashout"
+  kind: string
   title: string
-  body: string
+  body?: string
+  data?: Record<string, any>
   read: boolean
   created_at: string
 }

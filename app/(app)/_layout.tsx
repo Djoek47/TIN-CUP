@@ -28,6 +28,13 @@ export default function AppTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="compose"
+        options={{
+          title: "POST",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="plus" size={size} color={c} />,
+        }}
+      />
+      <Tabs.Screen
         name="wallet"
         options={{
           title: "Tin Cup",
