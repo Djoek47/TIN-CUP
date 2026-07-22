@@ -1,133 +1,125 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"
-import { Platform } from "react-native"
-import { Session } from "@supabase/supabase-js"
-import * as AppleAuthentication from "expo-apple-authentication"
-import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { ThirdwebSDK } from "@thirdweb-dev/sdk"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { supabase } from "@/lib/supabase"
 import { Profile } from "@/lib/types"
 
+const WALLET_KEY = "tinecup_wallet_address"
+const PROJECT_WALLET = "0x742d35Cc6634C0532925a3b844Bc7e7595f0bEb"
+
 interface AuthState {
-  session: Session | null
+  wallet: string | null
   profile: Profile | null
   loading: boolean
-  configured: boolean
+  isLord: boolean
+  connectWallet: () => Promise<{ error?: string }>
+  disconnectWallet: () => Promise<void>
   refreshProfile: () => Promise<void>
-  signInWithEmail: (email: string, password: string) => Promise<{ error?: string }>
-  signUpWithEmail: (email: string, password: string, displayName?: string) => Promise<{ error?: string }>
-  signInWithApple: () => Promise<{ error?: string }>
   updateProfile: (patch: Partial<Profile>) => Promise<{ error?: string }>
-  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
+  const [wallet, setWallet] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle()
-    setProfile((data as Profile) ?? null)
+  const loadProfile = useCallback(async (walletAddress: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", walletAddress.toLowerCase())
+      .maybeSingle()
+
+    if (data) {
+      setProfile(data as Profile)
+    } else if (error?.code !== "PGRST116") {
+      console.log("[v0] Profile load error:", error)
+    } else {
+      // Profile doesn't exist yet, create it
+      const newProfile: Partial<Profile> = {
+        id: walletAddress.toLowerCase(),
+        display_name: walletAddress.slice(0, 6) + "..." + walletAddress.slice(-4),
+        handle: "outlaw_" + walletAddress.slice(2, 10),
+        coins: 0,
+        balance_cents: 0,
+        onboarded: false,
+      }
+      const { data: created } = await supabase.from("profiles").insert(newProfile).select("*").maybeSingle()
+      if (created) {
+        setProfile(created as Profile)
+      }
+    }
   }, [])
 
   const refreshProfile = useCallback(async () => {
-    if (session?.user?.id) await loadProfile(session.user.id)
-  }, [session, loadProfile])
+    if (wallet) await loadProfile(wallet)
+  }, [wallet, loadProfile])
 
+  // Load wallet from storage on mount
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    const initWallet = async () => {
+      const stored = await AsyncStorage.getItem(WALLET_KEY)
+      if (stored) {
+        setWallet(stored)
+        await loadProfile(stored)
+      }
       setLoading(false)
-      return
     }
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (data.session?.user?.id) await loadProfile(data.session.user.id)
-      setLoading(false)
-    })
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
-      setSession(s)
-      if (s?.user?.id) await loadProfile(s.user.id)
-      else setProfile(null)
-    })
-    return () => sub.subscription.unsubscribe()
+    initWallet()
   }, [loadProfile])
 
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message }
-  }, [])
-
-  const signUpWithEmail = useCallback(async (email: string, password: string, displayName?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: displayName ? { display_name: displayName } : undefined },
-    })
-    return { error: error?.message }
-  }, [])
-
-  const signInWithApple = useCallback(async () => {
+  const connectWallet = useCallback(async () => {
     try {
-      if (Platform.OS !== "ios") {
-        return { error: "Sign in with Apple runs on a real iPhone (Expo Go / TestFlight). Use email here on web." }
-      }
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      })
-      if (!credential.identityToken) return { error: "No identity token from Apple." }
-      const { error } = await supabase.auth.signInWithIdToken({
-        provider: "apple",
-        token: credential.identityToken,
-      })
-      // Capture the name Apple gives us only on first sign-in.
-      if (!error && credential.fullName?.givenName) {
-        const name = [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ")
-        await supabase.auth.updateUser({ data: { display_name: name } })
-      }
-      return { error: error?.message }
+      // In production, this would use WalletConnect or a mobile wallet connector
+      // For now, we'll use a placeholder that demonstrates the flow
+      // You would integrate with MetaMask mobile, Rainbow, etc.
+      console.log("[v0] Wallet connection triggered")
+      return { error: "Wallet connector not yet implemented. Use placeholder for testing." }
     } catch (e: any) {
-      if (e?.code === "ERR_REQUEST_CANCELED") return { error: undefined }
-      return { error: e?.message ?? "Apple sign-in failed." }
+      return { error: e?.message ?? "Failed to connect wallet" }
     }
+  }, [])
+
+  const disconnectWallet = useCallback(async () => {
+    await AsyncStorage.removeItem(WALLET_KEY)
+    setWallet(null)
+    setProfile(null)
   }, [])
 
   const updateProfile = useCallback(
     async (patch: Partial<Profile>) => {
-      if (!session?.user?.id) return { error: "Not signed in." }
+      if (!wallet) return { error: "Not connected to wallet." }
       const { data, error } = await supabase
         .from("profiles")
         .update(patch)
-        .eq("id", session.user.id)
+        .eq("id", wallet.toLowerCase())
         .select("*")
         .maybeSingle()
-      if (!error && data) setProfile(data as Profile)
+
+      if (!error && data) {
+        setProfile(data as Profile)
+      }
       return { error: error?.message }
     },
-    [session],
+    [wallet],
   )
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setProfile(null)
-  }, [])
+  const isLord = profile?.fate === "lord"
 
   return (
     <AuthContext.Provider
       value={{
-        session,
+        wallet,
         profile,
         loading,
-        configured: isSupabaseConfigured,
+        isLord,
+        connectWallet,
+        disconnectWallet,
         refreshProfile,
-        signInWithEmail,
-        signUpWithEmail,
-        signInWithApple,
         updateProfile,
-        signOut,
       }}
     >
       {children}

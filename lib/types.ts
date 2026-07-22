@@ -1,7 +1,7 @@
 export type Fate = "drifter" | "lord"
 
 export interface Profile {
-  id: string
+  id: string // wallet address (lowercase)
   display_name?: string
   handle: string
   fate?: Fate
@@ -12,7 +12,7 @@ export interface Profile {
   coins: number
   balance_cents: number
   onboarded: boolean
-  stripe_customer_id?: string
+  is_lord: boolean
   created_at: string
 }
 
