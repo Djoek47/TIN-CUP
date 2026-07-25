@@ -29,6 +29,35 @@ export default function LeaderboardScreen() {
 
   useEffect(() => {
     loadLeaderboard()
+
+    // Subscribe to real-time updates
+    let subscription: any
+    if (tab === "givers") {
+      subscription = supabase
+        .channel(`gifts_${tab}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "gifts" }, () => {
+          loadLeaderboard()
+        })
+        .subscribe()
+    } else if (tab === "beggars") {
+      subscription = supabase
+        .channel(`begs_${tab}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "begs" }, () => {
+          loadLeaderboard()
+        })
+        .subscribe()
+    } else if (tab === "lords") {
+      subscription = supabase
+        .channel(`profiles_${tab}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+          loadLeaderboard()
+        })
+        .subscribe()
+    }
+
+    return () => {
+      if (subscription) subscription.unsubscribe()
+    }
   }, [tab])
 
   const loadLeaderboard = async () => {

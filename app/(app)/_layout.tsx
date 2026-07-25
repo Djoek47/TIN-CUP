@@ -28,10 +28,17 @@ export default function AppTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="compose"
+        name="search"
         options={{
-          title: "POST",
-          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="plus" size={size} color={c} />,
+          title: "Find",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="magnify" size={size} color={c} />,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: "Top Dogs",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="crown" size={size} color={c} />,
         }}
       />
       <Tabs.Screen
@@ -39,6 +46,13 @@ export default function AppTabsLayout() {
         options={{
           title: "Tin Cup",
           tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="cup" size={size} color={c} />,
+        }}
+      />
+      <Tabs.Screen
+        name="compose"
+        options={{
+          title: "POST",
+          tabBarIcon: ({ color: c, size }) => <MaterialCommunityIcons name="plus" size={size} color={c} />,
         }}
       />
       <Tabs.Screen
