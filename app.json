@@ -17,7 +17,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tincup.app",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need access to your camera to capture profile photos",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to choose images",
+        "NSPhotoLibraryAddUsageDescription": "We need to save photos to your library",
+        "NSMicrophoneUsageDescription": "We need microphone access for video recording (optional)"
+      }
     },
     "android": {
       "package": "com.tincup.app",
@@ -26,7 +32,13 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -39,6 +51,8 @@
       "expo-image",
       "expo-web-browser",
       "expo-secure-store",
+      "expo-camera",
+      "expo-image-picker",
       [
         "expo-notifications",
         {

@@ -1,20 +1,59 @@
+import { useState } from "react"
 import { View } from "react-native"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
+import { CameraButton } from "@/components/ui/CameraButton"
 import { useAuth } from "@/providers/AuthProvider"
+import { supabase } from "@/lib/supabase"
+import { uploadImageToSupabase } from "@/lib/camera"
 import { color, space } from "@/theme/tokens"
 import { formatCents } from "@/lib/format"
 
 export default function ProfileScreen() {
   const router = useRouter()
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, refreshProfile } = useAuth()
+  const [uploading, setUploading] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
     router.replace("/(auth)/sign-in")
+  }
+
+  const handleImagePicked = async (imageUri: string) => {
+    if (!profile?.id) return
+
+    setUploading(true)
+    try {
+      console.log("[v0] Uploading profile image:", imageUri)
+      
+      const fileName = `${profile.id}-profile-${Date.now()}.jpg`
+      const publicUrl = await uploadImageToSupabase(
+        imageUri,
+        "profiles",
+        fileName,
+        supabase
+      )
+
+      if (publicUrl) {
+        // Update profile with image URL
+        const { error } = await supabase
+          .from("profiles")
+          .update({ display_name: profile.display_name, profile_image_url: publicUrl })
+          .eq("id", profile.id)
+
+        if (error) throw error
+
+        console.log("[v0] Profile image uploaded:", publicUrl)
+        await refreshProfile()
+      }
+    } catch (e: any) {
+      console.log("[v0] Profile upload error:", e)
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -33,15 +72,24 @@ export default function ProfileScreen() {
           marginBottom: space[6],
         }}
       >
-        <Txt
-          variant="displayXL"
-          style={{
-            fontSize: 80,
-            marginBottom: space[4],
-          }}
-        >
-          {profile?.face || "🤠"}
-        </Txt>
+        <View style={{ position: "relative", marginBottom: space[4] }}>
+          <Txt
+            variant="displayXL"
+            style={{
+              fontSize: 80,
+            }}
+          >
+            {profile?.face || "🤠"}
+          </Txt>
+          <View style={{ position: "absolute", bottom: 0, right: 0 }}>
+            <CameraButton
+              onImagePicked={handleImagePicked}
+              size="small"
+              disabled={uploading}
+              icon={uploading ? "loading" : "camera"}
+            />
+          </View>
+        </View>
         <Txt variant="displayL" center>
           {profile?.title || "OUTLAW"}
         </Txt>

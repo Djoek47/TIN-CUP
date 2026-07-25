@@ -1,15 +1,18 @@
 import { useState } from "react"
-import { View, ScrollView } from "react-native"
+import { View, ScrollView, Pressable } from "react-native"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
 import { Field } from "@/components/ui/Field"
 import { Card } from "@/components/ui/Card"
+import { CameraButton } from "@/components/ui/CameraButton"
 import { useAuth } from "@/providers/AuthProvider"
 import { supabase } from "@/lib/supabase"
+import { uploadImageToSupabase } from "@/lib/camera"
 import { color, space } from "@/theme/tokens"
 import { formatCents } from "@/lib/format"
+import * as ImagePicker from "expo-image-picker"
 
 export default function ComposeBegsScreen() {
   const router = useRouter()
@@ -18,7 +21,13 @@ export default function ComposeBegsScreen() {
   const [story, setStory] = useState("")
   const [goalCents, setGoalCents] = useState("5000")
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
+  const [imageUri, setImageUri] = useState<string | null>(null)
+
+  const handleImagePicked = async (uri: string) => {
+    setImageUri(uri)
+  }
 
   const handlePublish = async () => {
     if (!title.trim()) {
@@ -34,6 +43,16 @@ export default function ComposeBegsScreen() {
     setError("")
 
     try {
+      let imageUrl: string | null = null
+
+      // Upload image if selected
+      if (imageUri) {
+        setUploading(true)
+        const fileName = `${profile.id}-beg-${Date.now()}.jpg`
+        imageUrl = await uploadImageToSupabase(imageUri, "begs", fileName, supabase)
+        setUploading(false)
+      }
+
       const { error: err } = await supabase.from("begs").insert({
         author_id: profile.id,
         title,
@@ -42,15 +61,18 @@ export default function ComposeBegsScreen() {
         raised_cents: 0,
         backers: 0,
         status: "open",
+        image_url: imageUrl,
       })
 
       if (err) throw err
 
       router.replace("/(app)")
     } catch (e: any) {
+      console.log("[v0] Publish error:", e)
       setError(e.message || "Failed to post beg")
     } finally {
       setLoading(false)
+      setUploading(false)
     }
   }
 
@@ -102,8 +124,42 @@ export default function ComposeBegsScreen() {
         value={goalCents}
         onChangeText={setGoalCents}
         keyboardType="decimal-pad"
-        style={{ marginBottom: space[4] }}
+        style={{ marginBottom: space[6] }}
       />
+
+      {/* Image Picker */}
+      <View style={{ marginBottom: space[6] }}>
+        <Txt variant="bodyS" color={color.text.secondary} style={{ marginBottom: space[3] }}>
+          ADD A PHOTO (OPTIONAL)
+        </Txt>
+        {imageUri ? (
+          <Pressable
+            onPress={() => setImageUri(null)}
+            style={{
+              width: "100%",
+              height: 200,
+              backgroundColor: color.surface.card,
+              borderRadius: 8,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: space[2],
+            }}
+          >
+            <Txt variant="bodyM" color={color.text.secondary}>
+              📸 Image selected
+            </Txt>
+            <Txt variant="bodyS" color={color.text.tertiary} style={{ marginTop: space[1] }}>
+              Tap to remove
+            </Txt>
+          </Pressable>
+        ) : (
+          <CameraButton
+            onImagePicked={handleImagePicked}
+            size="large"
+            disabled={uploading}
+          />
+        )}
+      </View>
 
       <Card
         style={{
