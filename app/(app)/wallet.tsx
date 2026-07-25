@@ -31,27 +31,6 @@ export default function WalletScreen() {
     loadLedger()
   }, [profile?.id])
 
-  const handleDeposit = async () => {
-    setLoading(true)
-    try {
-      // Test mode: add $10 for demo
-      const { error } = await supabase.rpc("deposit_funds", {
-        p_amount_cents: 1000,
-      })
-
-      if (!error) {
-        await refreshProfile()
-        await loadLedger()
-      } else {
-        throw error
-      }
-    } catch (e: any) {
-      alert(e.message || "Deposit failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const loadLedger = async () => {
     if (!profile?.id) return
     const { data } = await supabase
@@ -64,18 +43,54 @@ export default function WalletScreen() {
     if (data) setLedger(data)
   }
 
-  const handleCashout = async () => {
+  const handleDeposit = async () => {
     setLoading(true)
     try {
-      const { error } = await supabase.rpc("cashout_funds", {
-        p_amount_cents: profile?.balance_cents ?? 0,
+      console.log("[v0] Deposit: Adding $10 test funds")
+      const { data, error } = await supabase.rpc("deposit_funds", {
+        p_amount_cents: 1000, // $10
       })
 
-      if (!error) {
-        await refreshProfile()
-      } else {
-        alert(`Error: ${error.message}`)
+      if (error) {
+        console.log("[v0] Deposit error:", error)
+        throw error
       }
+
+      console.log("[v0] Deposit success:", data)
+      await refreshProfile()
+      await loadLedger()
+    } catch (e: any) {
+      console.log("[v0] Deposit failed:", e)
+      alert(e.message || "Deposit failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCashout = async () => {
+    if (!profile?.balance_cents || profile.balance_cents === 0) {
+      alert("No balance to cash out")
+      return
+    }
+
+    setLoading(true)
+    try {
+      console.log("[v0] Cashout: Withdrawing", profile.balance_cents)
+      const { data, error } = await supabase.rpc("cashout_funds", {
+        p_amount_cents: profile.balance_cents,
+      })
+
+      if (error) {
+        console.log("[v0] Cashout error:", error)
+        throw error
+      }
+
+      console.log("[v0] Cashout success:", data)
+      await refreshProfile()
+      await loadLedger()
+    } catch (e: any) {
+      console.log("[v0] Cashout failed:", e)
+      alert(e.message || "Cashout failed")
     } finally {
       setLoading(false)
     }

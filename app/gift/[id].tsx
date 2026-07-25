@@ -69,69 +69,25 @@ export default function GiftScreen() {
     setError("")
 
     try {
-      console.log("[v0] Sending gift: ", { sender: profile.id, recipient: beg.author_id, amount })
+      console.log("[v0] Sending gift:", { sender: profile.id, recipient: beg.author_id, amount })
 
-      // Step 1: Send USDT on blockchain (or use test mode)
-      let txHash = ""
-      try {
-        // Try real transaction if signer available, fall back to test mode
-        if (true) { // TODO: Check if signer exists
-          const result = await simulateUsdtTransfer(profile.id, beg.author_id, amount, true)
-          txHash = result.hash
-          console.log("[v0] Test transaction created:", txHash)
-        }
-      } catch (chainError) {
-        console.log("[v0] Blockchain transaction failed, using test mode:", chainError)
-        const testResult = await simulateUsdtTransfer(profile.id, beg.author_id, amount, true)
-        txHash = testResult.hash
+      // Use RPC function for atomic transaction (all or nothing)
+      const { data, error } = await supabase.rpc("send_gift", {
+        p_recipient_id: beg.author_id,
+        p_amount_cents: amount,
+        p_message: message || null,
+        p_beg_id: beg.id,
+      })
+
+      if (error) {
+        console.log("[v0] Send gift error:", error)
+        throw error
       }
 
-      // Step 2: Record gift in Supabase
-      const { data: giftData, error: giftErr } = await supabase
-        .from("gifts")
-        .insert({
-          sender_id: profile.id,
-          recipient_id: beg.author_id,
-          beg_id: beg.id,
-          amount_cents: amount,
-          coins: Math.floor(amount / 100), // $1 = 1 coin
-          message: message || null,
-          spectacle,
-          tx_hash: txHash,
-        })
-        .select()
-        .single()
+      console.log("[v0] Gift sent successfully:", data)
 
-      if (giftErr) throw giftErr
-
-      // Step 3: Record ledger entry for sender
-      await supabase.from("ledger_entries").insert({
-        user_id: profile.id,
-        kind: "gift_sent",
-        amount_cents: -amount,
-        balance_after_cents: (profile.balance_cents || 0) - amount,
-        description: `Sent to ${beg.author?.display_name}`,
-        ref_id: giftData?.id,
-      })
-
-      // Step 4: Record ledger entry for recipient
-      const recipientProfile = await supabase
-        .from("profiles")
-        .select("balance_cents")
-        .eq("id", beg.author_id)
-        .single()
-
-      await supabase.from("ledger_entries").insert({
-        user_id: beg.author_id,
-        kind: "gift_received",
-        amount_cents: amount,
-        balance_after_cents: (recipientProfile.data?.balance_cents || 0) + amount,
-        description: `Received from ${profile.id}`,
-        ref_id: giftData?.id,
-      })
-
-      // Step 5: Update beg progress
-      await supabase
+      // Update beg progress (raised amount and backer count)
+      const { error: begErr } = await supabase
         .from("begs")
         .update({
           raised_cents: (beg.raised_cents || 0) + amount,
@@ -139,16 +95,7 @@ export default function GiftScreen() {
         })
         .eq("id", beg.id)
 
-      console.log("[v0] Gift recorded in database")
-
-      // Step 6: Create notification for recipient
-      await supabase.from("notifications").insert({
-        user_id: beg.author_id,
-        kind: "gift",
-        title: `Gift from ${profile.id?.slice(0, 10)}...`,
-        body: message || `Received ${formatCents(amount)}`,
-        data: { gift_id: giftData?.id, beg_id: beg.id },
-      })
+      if (begErr) console.log("[v0] Beg update warning:", begErr)
 
       // Play spectacle animation
       setShowSpectacle(true)
@@ -162,7 +109,7 @@ export default function GiftScreen() {
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       await refreshProfile()
-      Alert.alert("Success", `Sent ${formatCents(amount)} to ${beg.author?.display_name}`)
+      Alert.alert("Success", `Sent ${formatCents(amount)} to ${beg.author?.display_name}!`)
       router.back()
     } catch (e: any) {
       console.log("[v0] Gift error:", e)
