@@ -7,10 +7,12 @@ import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
 import { Field } from "@/components/ui/Field"
 import { Card } from "@/components/ui/Card"
+import { ShareButton } from "@/components/ui/ShareButton"
 import { useAuth } from "@/providers/AuthProvider"
 import { supabase } from "@/lib/supabase"
 import { sendUsdt, USDT_ADDRESS } from "@/lib/thirdweb"
 import { simulateUsdtTransfer } from "@/lib/test-utils"
+import { shareBeg, copyBegLink } from "@/lib/share"
 import { color, space } from "@/theme/tokens"
 import { Beg, Profile } from "@/lib/types"
 import { formatCents } from "@/lib/format"
@@ -48,6 +50,16 @@ export default function GiftScreen() {
 
     loadBeg()
   }, [id])
+
+  const handleShareBeg = async () => {
+    if (!beg?.id || !beg?.title) return
+    await shareBeg(beg.title, beg.id)
+  }
+
+  const handleCopyLink = async () => {
+    if (!beg?.id) return
+    await copyBegLink(beg.id)
+  }
 
   const handleSendGift = async () => {
     if (!profile?.id || !beg?.id) {

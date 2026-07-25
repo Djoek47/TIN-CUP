@@ -6,9 +6,11 @@ import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { CameraButton } from "@/components/ui/CameraButton"
+import { ShareButton } from "@/components/ui/ShareButton"
 import { useAuth } from "@/providers/AuthProvider"
 import { supabase } from "@/lib/supabase"
 import { uploadImageToSupabase } from "@/lib/camera"
+import { shareProfile, copyProfileLink } from "@/lib/share"
 import { color, space } from "@/theme/tokens"
 import { formatCents } from "@/lib/format"
 
@@ -16,6 +18,16 @@ export default function ProfileScreen() {
   const router = useRouter()
   const { profile, signOut, refreshProfile } = useAuth()
   const [uploading, setUploading] = useState(false)
+
+  const handleShare = async () => {
+    if (!profile?.id) return
+    await shareProfile(profile.display_name || profile.handle, profile.id)
+  }
+
+  const handleCopyLink = async () => {
+    if (!profile?.id) return
+    await copyProfileLink(profile.id)
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -96,6 +108,21 @@ export default function ProfileScreen() {
         <Txt variant="headlineM" color={color.text.secondary} center style={{ marginTop: space[2] }}>
           @{profile?.handle}
         </Txt>
+
+        {/* Share Buttons */}
+        <View style={{ flexDirection: "row", gap: space[2], marginTop: space[4] }}>
+          <ShareButton
+            onPress={handleShare}
+            size="small"
+            label="Share"
+          />
+          <Button
+            title="Copy Link"
+            onPress={handleCopyLink}
+            variant="ghost"
+            size="small"
+          />
+        </View>
       </Card>
 
       {/* Stats */}
