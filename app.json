@@ -59,8 +59,7 @@
           "color": "#F5B32B"
         }
       ],
-      "expo-splash-screen",
-      "@stripe/stripe-react-native"
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
