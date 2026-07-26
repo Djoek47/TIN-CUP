@@ -56,6 +56,15 @@ export const color = {
     card: primitive.midnight[700],
     sheet: primitive.midnight[600],
   },
+  /** Screen aliases used across app routes (maps to bg primitives) */
+  surface: {
+    idle: primitive.midnight[800],
+    raised: primitive.midnight[800],
+    card: primitive.midnight[700],
+    sheet: primitive.midnight[600],
+    drifter: "#1A2430",
+    lord: "#2A2418",
+  },
   border: {
     subtle: primitive.midnight[500],
     strong: "#3C4550",
@@ -71,6 +80,7 @@ export const color = {
     primaryPressed: primitive.gold[600],
     primaryHover: primitive.gold[400],
     danger: primitive.oxblood[500],
+    success: primitive.cactus[500],
   },
   money: {
     positive: primitive.cactus[500], // received / cash-out ONLY

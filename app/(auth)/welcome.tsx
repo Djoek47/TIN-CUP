@@ -1,7 +1,6 @@
 import { View, StyleSheet, ImageBackground } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
 import { Button } from "@/components/ui/Button"
@@ -51,10 +50,10 @@ export default function Welcome() {
               loading={loading}
               size="large"
             >
-              🔗 Connect Wallet
+              Enter the Gulch
             </Button>
             <Txt variant="caption" color={color.text.tertiary} center style={styles.note}>
-              Sign in with MetaMask, Rainbow, or any Web3 wallet on Polygon Mumbai testnet.
+              On iPhone & Android this opens a local test wallet in Expo Go. No Chrome required.
             </Txt>
             <Button
               variant="ghost"

@@ -10,13 +10,19 @@ export default function AppTabsLayout() {
         tabBarActiveTintColor: color.action.primary,
         tabBarInactiveTintColor: color.text.tertiary,
         tabBarStyle: {
-          backgroundColor: color.bg.surface,
+          backgroundColor: "rgba(18, 22, 31, 0.94)",
           borderTopColor: color.border.subtle,
           borderTopWidth: 1,
-          height: 84,
-          paddingTop: 8,
+          height: 88,
+          paddingTop: 10,
+          paddingBottom: 10,
         },
-        tabBarLabelStyle: { fontFamily: font.headlineSemi, fontSize: 11 },
+        tabBarLabelStyle: {
+          fontFamily: font.headlineSemi,
+          fontSize: 10,
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+        },
         sceneStyle: { backgroundColor: color.bg.canvas },
       }}
     >

@@ -2,122 +2,55 @@
 
 > "Where strangers throw real gold at strangers — for glory, for laughs, for the story."
 
-A full-featured Western-themed social tipping app built with React 18, Tailwind CSS v4, and the Gulch Design System. Dark-first, gold-accented, glass-morphic iOS 27 aesthetic.
+iPhone & Android social tipping app. Expo Router + Supabase + Gulch Design System.
 
----
+## Quick start (Expo Go — mobile)
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+1. Install **Expo Go** on your iPhone (App Store) or Android (Play Store)
+2. Scan the QR code from the terminal with:
+   - **iPhone:** Camera app → opens in Expo Go
+   - **Android:** Expo Go → Scan QR code
+3. App loads on device (splash → welcome / Main Street)
+
+Same Wi‑Fi / tunnel URL is required. `npm run dev` uses Expo tunnel so phones can reach the cloud/dev host.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Mobile test server (Expo Go via tunnel) |
+| `npm run dev:lan` | Expo Go over LAN (`exp://…`) |
+| `npm start` | Expo Dev Tools |
+| `npm run ios` / `android` | Open simulator / emulator |
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Framework | React 18 + TypeScript |
-| Styling | Tailwind CSS v4 + custom glass utilities |
-| Build | Vite 6 |
-| Animation | motion/react + CSS keyframes |
-| Notifications | sonner |
-| Icons | Inline SVG (custom Gulch icon set) |
-| Fonts | Ultra · Archivo · Inter · IBM Plex Mono |
+- React Native + Expo 57 (Router)
+- TypeScript
+- Supabase (Postgres + RLS)
+- ethers / thirdweb (Polygon Mumbai test)
+- Gulch tokens in `theme/tokens.ts`
+
+## Docs
+
+1. `READY_TO_CURSOR.md` — 5-minute overview
+2. `FINAL_HANDOFF.md` — architecture & features
+3. `START_TESTING.md` — testing checklist
+4. `PAYMENT_FLOWS_GUIDE.md` — payment RPCs
+
+## Env
+
+`.env.local` (from `.env.example`):
+
+- `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (defaults also in `app.json` → `extra`)
+- `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` (optional)
 
 ---
 
-## Project Structure
-
-```
-src/
-├── app/
-│   └── App.tsx          ← Full app (splash → main, all screens)
-├── components/
-│   └── TinCupApp.tsx    ← V0-compatible re-export
-├── styles/
-│   ├── fonts.css        ← Google Fonts + keyframes + glass utilities
-│   ├── theme.css        ← Tailwind tokens (Gulch Design System)
-│   └── index.css        ← Tailwind entry + @theme inline mapping
-└── main.tsx
-```
-
----
-
-## Screens
-
-| Screen | Notes |
-|---|---|
-| Splash | 2.8s auto-advance, coin drop animation |
-| Welcome | Pan background, CTA |
-| Choose Fate | Accordion expand — Vagrant (free) vs Lord ($100) |
-| Character Creator | 5-category item picker, locked Lord-only items |
-| Main Street | Live rail · Trending begs · Bounties · Leaderboard teaser |
-| Feed of Madness | TikTok-style clips · Double-tap toss · Follow/share/flag |
-| Lobby | Stats strip · Filter pills · Beg grid |
-| Live Stream | Battle bar · Gift rail (×10/×50/×100/×500) · Chat |
-| Wallet | Balance hero · Ledger · Deposit → Bank handoff · Cash out |
-| Beg Detail | Gift tiers · React · Share |
-| Challenge Detail | Bounty details · Rules · Enter button |
-| Composer | 3-step wizard (Write → Show → Preview) |
-| Leaderboard | Filter tabs · Period selector · Your rank |
-| Notifications | Grouped Money / Town / The Law |
-| Search | Live query filter · Trending tags |
-| Ascension | Scroll crossfade Vagrant→Lord |
-| PONR | 2-second hold-to-confirm fill bar |
-| Coronation | Coin rain · Crown animation |
-| Profile | Wanted Poster parchment card · Ascension CTA |
-
----
-
-## Design System — Gulch Tokens
-
-| Token | Value | Role |
-|---|---|---|
-| `m900` | `#0B0E14` | Page background |
-| `g500` | `#F5B32B` | Gold — money, Lords |
-| `c500` | `#3F9B5B` | Cactus — received, cash out |
-| `o500` | `#8E2D30` | Oxblood — danger, flagged |
-| `p100` | `#F4EEDD` | Parchment — Wanted Posters |
-
-### Glass Classes (fonts.css)
-
-```css
-.tin-glass           /* card-level blur */
-.tin-glass-elevated  /* sheet/panel heavy blur */
-.tin-glass-gold      /* gold-tinted translucent */
-.tin-glass-nav       /* bottom nav pill, 28px blur */
-.tin-press           /* 80ms scale(0.97) on active */
-.tin-press-sm        /* 80ms scale(0.94) on active */
-```
-
----
-
-## Local Dev
-
-```bash
-pnpm install
-pnpm build
-```
-
----
-
-## V0 Usage
-
-Import the component directly in a Next.js / V0 project:
-
-```tsx
-import TinCupApp from "@/components/TinCupApp"
-
-export default function Page() {
-  return <TinCupApp />
-}
-```
-
-Ensure your project has `sonner` installed and Tailwind configured with the custom tokens from `src/styles/theme.css`.
-
----
-
-## Castes
-
-**Vagrant** — The drifter. Receives coin. Beg, perform, climb.  
-**Lord** — The patron. Gives coin. Sets bounties, runs Courts, rains gold.
-
-Lords never fall. And never go back.
-
----
-
-*Season 1: Gold Rush · Perdition Gulch · Est. Now*
+*Season 1: Gold Rush · Perdition Gulch*

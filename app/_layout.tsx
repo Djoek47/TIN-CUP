@@ -49,7 +49,7 @@ export default function RootLayout() {
                   screens: {
                     "(app)": "app",
                     "beg-details": "beg/:id",
-                    "gift": "gift/:id",
+                    "gift/[id]": "gift/:id",
                     "profile": "profile/:id",
                   },
                 },
@@ -60,7 +60,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(app)" />
-            <Stack.Screen name="gift" options={{ presentation: "transparentModal", animation: "fade" }} />
+            <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
             <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
           </Stack>
         </AuthProvider>

@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"
+import { Platform } from "react-native"
 import { ethers } from "ethers"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import * as SecureStore from "expo-secure-store"
 import { supabase } from "@/lib/supabase"
 import { RPC_URL } from "@/lib/thirdweb"
 import { Profile } from "@/lib/types"
 
 const WALLET_KEY = "tincup_wallet_address"
+const DEMO_PK_KEY = "tincup_demo_private_key"
 
 interface AuthState {
   wallet: string | null
@@ -75,72 +78,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const ensureProfile = useCallback(async (address: string) => {
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", address)
+      .maybeSingle()
+
+    if (!existingProfile) {
+      const handle = `outlaw_${address.slice(2, 10)}`
+      const { data: newProfile, error } = await supabase
+        .from("profiles")
+        .insert({
+          id: address,
+          handle,
+          display_name: address.slice(0, 6),
+          fate: "drifter",
+          hat: "stetson",
+          face: "🤠",
+          accent: "gold",
+          coins: 0,
+          balance_cents: 0,
+          is_lord: false,
+          onboarded: false,
+        })
+        .select()
+        .single()
+
+      if (!error && newProfile) {
+        setProfile(newProfile as Profile)
+      }
+    } else {
+      setProfile(existingProfile as Profile)
+    }
+  }, [])
+
   const connectWallet = useCallback(async () => {
     try {
-      // Check for Web3 provider (MetaMask, etc.)
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        const ethereum = (window as any).ethereum
+      const ethereum =
+        Platform.OS === "web" && typeof window !== "undefined"
+          ? (window as any).ethereum
+          : null
 
-        // Request account access
-        const accounts = await ethereum.request({
-          method: "eth_requestAccounts",
-        })
-
+      // Web: MetaMask / injected wallet when available
+      if (ethereum) {
+        const accounts = await ethereum.request({ method: "eth_requestAccounts" })
         const address = accounts[0].toLowerCase()
-
-        // Create signer from the wallet
         const web3Provider = new ethers.providers.Web3Provider(ethereum)
         const walletSigner = web3Provider.getSigner()
 
         setWallet(address)
         setSigner(walletSigner)
         setProvider(web3Provider)
-
-        // Save to storage
         await AsyncStorage.setItem(WALLET_KEY, address)
-
-        // Load or create profile
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", address)
-          .maybeSingle()
-
-        if (!existingProfile) {
-          // Create new profile for this wallet
-          const handle = `outlaw_${address.slice(2, 10)}`
-          const { data: newProfile, error } = await supabase
-            .from("profiles")
-            .insert({
-              id: address,
-              handle,
-              display_name: address.slice(0, 6),
-              fate: "drifter",
-              hat: "stetson",
-              face: "🤠",
-              accent: "gold",
-              coins: 0,
-              balance_cents: 0,
-              is_lord: false,
-              onboarded: false,
-            })
-            .select()
-            .single()
-
-          if (!error && newProfile) {
-            setProfile(newProfile as Profile)
-          }
-        } else {
-          setProfile(existingProfile as Profile)
-        }
-      } else {
-        throw new Error("No Web3 wallet detected. Install MetaMask or use a wallet-enabled browser.")
+        await ensureProfile(address)
+        return
       }
+
+      // iPhone / Android (Expo Go): local demo wallet so testing works without MetaMask
+      const rpcProvider = new ethers.providers.JsonRpcProvider(RPC_URL)
+      let privateKey: string | null = null
+      try {
+        privateKey = await SecureStore.getItemAsync(DEMO_PK_KEY)
+      } catch {
+        privateKey = await AsyncStorage.getItem(DEMO_PK_KEY)
+      }
+
+      let demoWallet: ethers.Wallet
+      if (privateKey) {
+        demoWallet = new ethers.Wallet(privateKey, rpcProvider)
+      } else {
+        demoWallet = ethers.Wallet.createRandom().connect(rpcProvider)
+        try {
+          await SecureStore.setItemAsync(DEMO_PK_KEY, demoWallet.privateKey)
+        } catch {
+          await AsyncStorage.setItem(DEMO_PK_KEY, demoWallet.privateKey)
+        }
+      }
+
+      const address = demoWallet.address.toLowerCase()
+      setWallet(address)
+      setSigner(demoWallet)
+      setProvider(rpcProvider)
+      await AsyncStorage.setItem(WALLET_KEY, address)
+      await ensureProfile(address)
     } catch (e: any) {
       console.log("[v0] Wallet connect error:", e)
       throw e
     }
-  }, [])
+  }, [ensureProfile])
 
   const disconnectWallet = useCallback(async () => {
     setWallet(null)
