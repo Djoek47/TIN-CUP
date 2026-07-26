@@ -4,6 +4,8 @@
 
 iPhone & Android social tipping app. Expo Router + Supabase + Gulch Design System.
 
+**Expo SDK 54** — matches the App Store / Play Store Expo Go build. (SDK 55–57 are not in store Expo Go yet.)
+
 ## Quick start (Expo Go — mobile)
 
 ```bash
@@ -12,13 +14,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-1. Install **Expo Go** on your iPhone (App Store) or Android (Play Store)
-2. Scan the QR code from the terminal with:
+1. Install **Expo Go** from the App Store / Play Store (latest store build = SDK 54)
+2. Scan the QR code from the terminal:
    - **iPhone:** Camera app → opens in Expo Go
    - **Android:** Expo Go → Scan QR code
 3. App loads on device (splash → welcome / Main Street)
 
-Same Wi‑Fi / tunnel URL is required. `npm run dev` uses Expo tunnel so phones can reach the cloud/dev host.
+`npm run dev` uses Expo tunnel so phones can reach the cloud/dev host.
 
 ## Scripts
 
