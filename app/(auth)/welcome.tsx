@@ -1,4 +1,5 @@
-import { View, StyleSheet, ImageBackground, Pressable } from "react-native"
+import { useState } from "react"
+import { View, StyleSheet, ImageBackground, Pressable, ActivityIndicator } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
@@ -7,17 +8,29 @@ import { Button } from "@/components/ui/Button"
 import { useAuth } from "@/providers/AuthProvider"
 import { color, space } from "@/theme/tokens"
 
-/** Welcome screen aligned to Figma Make Tin-Cup-V2 */
+/** Welcome — Expo Go safe (no Chrome / MetaMask required) */
 export default function Welcome() {
   const router = useRouter()
-  const { connectWallet, loading } = useAuth()
+  const { connectWallet } = useAuth()
+  const [busy, setBusy] = useState(false)
 
-  const enterTown = async () => {
+  const enter = async (mode: "new" | "returning") => {
+    if (busy) return
+    setBusy(true)
     try {
-      await connectWallet()
-      router.replace("/(onboarding)/choose-fate")
+      const next = await connectWallet()
+      // Returning riders who finished onboarding go straight to Main Street
+      if (mode === "returning" && next?.onboarded) {
+        router.replace("/(app)")
+      } else {
+        router.replace("/(onboarding)/choose-fate")
+      }
     } catch (e) {
-      console.log("[v0] Wallet connection failed:", e)
+      console.log("[v0] Enter town failed:", e)
+      // Still advance — never leave the user stuck on welcome
+      router.replace("/(onboarding)/choose-fate")
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -49,14 +62,29 @@ export default function Welcome() {
           </View>
 
           <View style={styles.bottom}>
-            <Button title="Walk into town" onPress={enterTown} loading={loading} size="lg" />
+            <Button
+              title="Walk into town"
+              onPress={() => enter("new")}
+              loading={busy}
+              disabled={busy}
+              size="lg"
+            />
             <Txt variant="caption" color={color.text.tertiary} center>
-              Look around free. No account till you touch money.
+              Opens a local test seat on your phone. No Chrome or MetaMask.
             </Txt>
-            <Pressable onPress={enterTown} style={styles.signIn}>
-              <Txt variant="buttonM" color={color.text.secondary} center>
-                I&apos;ve been here before
-              </Txt>
+            <Pressable
+              onPress={() => enter("returning")}
+              style={styles.signIn}
+              disabled={busy}
+              accessibilityRole="button"
+            >
+              {busy ? (
+                <ActivityIndicator color={color.text.secondary} />
+              ) : (
+                <Txt variant="buttonM" color={color.text.secondary} center>
+                  I&apos;ve been here before
+                </Txt>
+              )}
             </Pressable>
           </View>
         </LinearGradient>
@@ -79,5 +107,5 @@ const styles = StyleSheet.create({
   mid: { alignItems: "center", paddingHorizontal: space[3] },
   tagline: { maxWidth: 280, lineHeight: 24 },
   bottom: { gap: space[3], paddingBottom: space[5] },
-  signIn: { paddingVertical: space[3] },
+  signIn: { paddingVertical: space[3], minHeight: 44, justifyContent: "center" },
 })
