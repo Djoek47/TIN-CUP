@@ -1,10 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"
 import { Platform } from "react-native"
-import { ethers } from "ethers"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Crypto from "expo-crypto"
 import { supabase } from "@/lib/supabase"
-import { RPC_URL } from "@/lib/thirdweb"
 import { Profile } from "@/lib/types"
 
 const WALLET_KEY = "tincup_wallet_address"
@@ -12,8 +10,8 @@ const DEMO_ADDR_KEY = "tincup_demo_address"
 
 interface AuthState {
   wallet: string | null
-  provider: ethers.providers.JsonRpcProvider | null
-  signer: ethers.Signer | null
+  provider: unknown
+  signer: unknown
   profile: Profile | null
   loading: boolean
   configured: boolean
@@ -26,7 +24,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-/** Expo Go–safe random 0x address (no ethers crypto / Chrome wallet). */
+/** Expo Go–safe random 0x address — uses expo-crypto, never ethers. */
 async function createDemoAddress(): Promise<string> {
   const bytes = await Crypto.getRandomBytesAsync(20)
   const hex = Array.from(bytes)
@@ -54,8 +52,8 @@ function localProfile(address: string): Profile {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [wallet, setWallet] = useState<string | null>(null)
-  const [provider, setProvider] = useState<ethers.providers.JsonRpcProvider | null>(null)
-  const [signer, setSigner] = useState<ethers.Signer | null>(null)
+  const [provider, setProvider] = useState<unknown>(null)
+  const [signer, setSigner] = useState<unknown>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [configured, setConfigured] = useState(false)
@@ -63,13 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const init = async () => {
       try {
-        // Lazy / optional RPC — never block mobile auth on chain connectivity
-        try {
-          setProvider(new ethers.providers.JsonRpcProvider(RPC_URL))
-        } catch {
-          setProvider(null)
-        }
-
         const storedWallet = await AsyncStorage.getItem(WALLET_KEY)
         if (storedWallet) {
           setWallet(storedWallet.toLowerCase())
@@ -96,11 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data) {
         setProfile(data as Profile)
-      } else if (!error) {
-        setProfile(null)
-      } else {
-        // Offline / RLS — keep a local stub so the app can proceed
+      } else if (error) {
         setProfile(localProfile(walletAddress))
+      } else {
+        setProfile(null)
       }
     } catch (e) {
       console.log("[v0] Load profile error:", e)
@@ -167,21 +157,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     address = address.toLowerCase()
 
     setWallet(address)
-    setSigner(null) // demo mode — no chain signer needed in Expo Go
+    setSigner(null)
+    setProvider(null)
     await AsyncStorage.setItem(WALLET_KEY, address)
     return ensureProfile(address)
   }, [ensureProfile])
 
   const connectWallet = useCallback(async (): Promise<Profile | null> => {
-    try {
-      const ethereum =
-        Platform.OS === "web" && typeof window !== "undefined"
-          ? (window as any).ethereum
-          : null
+    // Mobile (Expo Go): always local demo seat — no Chrome / MetaMask / ethers random
+    if (Platform.OS !== "web") {
+      return connectDemoWallet()
+    }
 
-      // Optional web MetaMask — never required for mobile
+    try {
+      const ethereum = typeof window !== "undefined" ? (window as any).ethereum : null
       if (ethereum) {
         try {
+          const { ethers } = await import("ethers")
           const accounts = await ethereum.request({ method: "eth_requestAccounts" })
           const address = accounts[0].toLowerCase()
           const web3Provider = new ethers.providers.Web3Provider(ethereum)
@@ -194,9 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("[v0] MetaMask failed, falling back to demo wallet:", e)
         }
       }
-
       return await connectDemoWallet()
-    } catch (e: any) {
+    } catch (e) {
       console.log("[v0] Wallet connect error:", e)
       return await connectDemoWallet()
     }
@@ -205,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const disconnectWallet = useCallback(async () => {
     setWallet(null)
     setSigner(null)
+    setProvider(null)
     setProfile(null)
     await AsyncStorage.removeItem(WALLET_KEY)
   }, [])
@@ -213,7 +205,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (patch: Partial<Profile>) => {
       if (!wallet) throw new Error("Not connected to wallet")
 
-      // Optimistic local update so onboarding works offline
       setProfile((prev) => (prev ? ({ ...prev, ...patch } as Profile) : prev))
 
       try {
