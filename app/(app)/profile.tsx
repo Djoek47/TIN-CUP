@@ -16,7 +16,7 @@ import { formatCents } from "@/lib/format"
 
 export default function ProfileScreen() {
   const router = useRouter()
-  const { profile, signOut, refreshProfile } = useAuth()
+  const { profile, disconnectWallet, refreshProfile } = useAuth()
   const [uploading, setUploading] = useState(false)
 
   const handleShare = async () => {
@@ -30,8 +30,8 @@ export default function ProfileScreen() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    router.replace("/(auth)/sign-in")
+    await disconnectWallet()
+    router.replace("/(auth)/welcome")
   }
 
   const handleImagePicked = async (imageUri: string) => {
@@ -202,12 +202,11 @@ export default function ProfileScreen() {
 
       {/* Actions */}
       <Button
+        title="Ride Off"
         onPress={handleSignOut}
         variant="secondary"
-        size="large"
-      >
-        Ride Off
-      </Button>
+        size="lg"
+      />
     </Screen>
   )
 }

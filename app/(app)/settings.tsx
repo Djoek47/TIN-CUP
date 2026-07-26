@@ -15,7 +15,7 @@ import { color, space } from "@/theme/tokens"
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const { profile, signOut, refreshProfile } = useAuth()
+  const { profile, disconnectWallet, refreshProfile, updateProfile } = useAuth()
   const [displayName, setDisplayName] = useState(profile?.display_name || "")
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [privateProfile, setPrivateProfile] = useState(false)
@@ -31,15 +31,9 @@ export default function SettingsScreen() {
     setError("")
 
     try {
-      const { error: err } = await supabase
-        .from("profiles")
-        .update({
-          display_name: displayName || profile.handle,
-        })
-        .eq("id", profile.id)
-
-      if (err) throw err
-
+      await updateProfile({
+        display_name: displayName || profile.handle,
+      })
       await refreshProfile()
       Alert.alert("Success", "Profile updated")
     } catch (e: any) {
@@ -72,10 +66,10 @@ export default function SettingsScreen() {
         onPress: async () => {
           setLoading(true)
           try {
-            await signOut()
+            await disconnectWallet()
             router.replace("/(auth)/welcome")
           } catch (e: any) {
-            logError("signOut", e)
+            logError("disconnectWallet", e)
             Alert.alert("Error", "Failed to sign out")
           } finally {
             setLoading(false)
@@ -143,7 +137,7 @@ export default function SettingsScreen() {
           title="Save Changes"
           onPress={handleSaveProfile}
           loading={saving}
-          size="small"
+          size="md"
         />
       </Card>
 
@@ -218,7 +212,7 @@ export default function SettingsScreen() {
           title="Sign Out"
           onPress={handleSignOut}
           variant="danger"
-          size="small"
+          size="md"
         />
 
         <Txt variant="bodyS" color={color.text.secondary} style={{ marginTop: space[3] }}>

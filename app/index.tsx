@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { View, StyleSheet } from "react-native"
+import { View, StyleSheet, Image } from "react-native"
 import { useRouter } from "expo-router"
 import Animated, {
   useSharedValue,
@@ -13,7 +13,9 @@ import { Txt } from "@/components/ui/Txt"
 import { useAuth } from "@/providers/AuthProvider"
 import { color, space } from "@/theme/tokens"
 
-/** Splash aligned to Figma Make — 2.8s coin drop → route */
+const AnimatedImage = Animated.createAnimatedComponent(Image)
+
+/** Splash — eagle dollar coin drop → route */
 export default function Splash() {
   const router = useRouter()
   const { loading, session, profile, configured } = useAuth()
@@ -53,7 +55,12 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.coin, coinStyle]}>🪙</Animated.Text>
+      <AnimatedImage
+        source={require("@/assets/art/eagle-coin.png")}
+        style={[styles.coin, coinStyle]}
+        resizeMode="contain"
+        accessibilityLabel="Tin Cup eagle dollar coin"
+      />
       <Txt variant="displayXL" color={color.action.primary} style={styles.word}>
         TIN CUP
       </Txt>
@@ -74,7 +81,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  coin: { fontSize: 60, marginBottom: space[5] },
+  coin: {
+    width: 120,
+    height: 120,
+    marginBottom: space[5],
+  },
   word: {
     letterSpacing: 2,
     textShadowColor: "rgba(245,179,43,0.4)",

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View, StyleSheet, ImageBackground, Pressable, ActivityIndicator } from "react-native"
+import { View, StyleSheet, ImageBackground, Pressable, ActivityIndicator, Image } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
@@ -47,6 +47,12 @@ export default function Welcome() {
           style={styles.scrim}
         >
           <View style={styles.top}>
+            <Image
+              source={require("@/assets/art/eagle-coin.png")}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityLabel="Tin Cup eagle dollar coin logo"
+            />
             <Txt variant="displayXL" color={color.action.primary} center style={styles.word}>
               TIN CUP
             </Txt>
@@ -97,6 +103,7 @@ const styles = StyleSheet.create({
   bg: { flex: 1 },
   scrim: { flex: 1, justifyContent: "space-between", paddingHorizontal: space[5] },
   top: { alignItems: "center", marginTop: space[9] + 8 },
+  logo: { width: 88, height: 88, marginBottom: space[3] },
   word: {
     letterSpacing: 2,
     textShadowColor: "rgba(245,179,43,0.35)",

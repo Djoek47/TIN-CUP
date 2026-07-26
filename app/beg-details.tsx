@@ -151,10 +151,10 @@ export default function BegDetailsModal() {
 
       {/* Action Buttons */}
       <View style={{ gap: space[2], marginBottom: space[6] }}>
-        <Button title="Send Gift" onPress={handleGift} size="large" />
+        <Button title="Send Gift" onPress={handleGift} size="lg" />
         <View style={{ flexDirection: "row", gap: space[2] }}>
           <ShareButton onPress={handleShare} size="small" label="Share" />
-          <Button title="Copy Link" onPress={handleCopyLink} variant="ghost" size="small" />
+          <Button title="Copy Link" onPress={handleCopyLink} variant="ghost" size="md" />
         </View>
       </View>
 

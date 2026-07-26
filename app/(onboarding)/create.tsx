@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View } from "react-native"
+import { View, Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
@@ -13,21 +13,27 @@ const FACES = ["😅", "😏", "😩", "🤨", "🧐", "😎", "🤠"]
 
 export default function CreateCharacter() {
   const router = useRouter()
-  const { profile, updateProfile } = useAuth()
+  const { updateProfile, connectWallet, wallet } = useAuth()
   const [title, setTitle] = useState("")
   const [hat, setHat] = useState(HATS[0])
   const [face, setFace] = useState(FACES[0])
   const [loading, setLoading] = useState(false)
 
   const handleFinish = async () => {
+    if (loading) return
     setLoading(true)
     try {
+      if (!wallet) await connectWallet()
       await updateProfile({
         title: title || "OUTLAW",
         hat,
         face,
         onboarded: true,
       })
+      router.replace("/(app)")
+    } catch (e) {
+      console.log("[v0] Create character failed:", e)
+      // Still enter town so the rider is never stuck
       router.replace("/(app)")
     } finally {
       setLoading(false)
@@ -46,13 +52,7 @@ export default function CreateCharacter() {
       </View>
 
       <View style={{ marginVertical: space[6], alignItems: "center" }}>
-        <Txt
-          variant="displayXL"
-          style={{
-            fontSize: 64,
-            marginBottom: space[3],
-          }}
-        >
+        <Txt variant="displayXL" style={{ fontSize: 64, marginBottom: space[3] }}>
           {face}
         </Txt>
       </View>
@@ -68,17 +68,16 @@ export default function CreateCharacter() {
         <Txt variant="bodyS" color={color.text.secondary}>
           FACE
         </Txt>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[3], marginTop: space[3] }}>
+        <View style={styles.chips}>
           {FACES.map((f) => (
-            <Button
+            <Pressable
               key={f}
-              variant={face === f ? "primary" : "secondary"}
-              size="small"
               onPress={() => setFace(f)}
-              style={{ flex: 0 }}
+              style={[styles.chip, face === f && styles.chipOn]}
+              accessibilityRole="button"
             >
-              {f}
-            </Button>
+              <Txt style={{ fontSize: 22 }}>{f}</Txt>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -87,24 +86,42 @@ export default function CreateCharacter() {
         <Txt variant="bodyS" color={color.text.secondary}>
           HAT
         </Txt>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space[3], marginTop: space[3] }}>
+        <View style={styles.chips}>
           {HATS.map((h) => (
-            <Button
+            <Pressable
               key={h}
-              variant={hat === h ? "primary" : "secondary"}
-              size="small"
               onPress={() => setHat(h)}
-              style={{ flex: 0 }}
+              style={[styles.chip, hat === h && styles.chipOn]}
+              accessibilityRole="button"
             >
-              {h}
-            </Button>
+              <Txt variant="buttonM" color={hat === h ? color.text.inverse : color.action.primary}>
+                {h}
+              </Txt>
+            </Pressable>
           ))}
         </View>
       </View>
 
-      <Button onPress={handleFinish} loading={loading} size="large">
-        Ride into Main Street
-      </Button>
+      <Button title="Ride into Main Street" onPress={handleFinish} loading={loading} size="lg" />
     </Screen>
   )
 }
+
+const styles = StyleSheet.create({
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space[3], marginTop: space[3] },
+  chip: {
+    minHeight: 44,
+    minWidth: 44,
+    paddingHorizontal: space[3],
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(245,179,43,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(245,179,43,0.24)",
+  },
+  chipOn: {
+    backgroundColor: color.action.primaryHover,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+})

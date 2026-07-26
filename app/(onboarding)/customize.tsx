@@ -179,7 +179,7 @@ export default function CustomizeCharacter() {
         title="Save Character"
         onPress={handleSave}
         loading={loading}
-        size="large"
+        size="lg"
         style={{ marginBottom: space[4] }}
       />
     </Screen>

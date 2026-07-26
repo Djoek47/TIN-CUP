@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react"
 import { Platform } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Crypto from "expo-crypto"
@@ -51,12 +51,18 @@ function localProfile(address: string): Profile {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [wallet, setWallet] = useState<string | null>(null)
+  const [wallet, setWalletState] = useState<string | null>(null)
   const [provider, setProvider] = useState<unknown>(null)
   const [signer, setSigner] = useState<unknown>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [configured, setConfigured] = useState(false)
+  const walletRef = useRef<string | null>(null)
+
+  const setWallet = useCallback((address: string | null) => {
+    walletRef.current = address
+    setWalletState(address)
+  }, [])
 
   useEffect(() => {
     const init = async () => {
@@ -75,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     init()
-  }, [])
+  }, [setWallet])
 
   const loadProfile = useCallback(async (walletAddress: string) => {
     try {
@@ -201,31 +207,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem(WALLET_KEY)
   }, [])
 
-  const updateProfile = useCallback(
-    async (patch: Partial<Profile>) => {
-      if (!wallet) throw new Error("Not connected to wallet")
+  const updateProfile = useCallback(async (patch: Partial<Profile>) => {
+    const address = walletRef.current
+    if (!address) throw new Error("Not connected to wallet")
 
-      setProfile((prev) => (prev ? ({ ...prev, ...patch } as Profile) : prev))
+    setProfile((prev) => {
+      if (prev) return { ...prev, ...patch } as Profile
+      return { ...localProfile(address), ...patch } as Profile
+    })
 
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .update(patch)
-          .eq("id", wallet)
-          .select()
-          .single()
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", address)
+        .select()
+        .single()
 
-        if (!error && data) setProfile(data as Profile)
-      } catch (e) {
-        console.log("[v0] updateProfile sync error (kept local):", e)
-      }
-    },
-    [wallet],
-  )
+      if (!error && data) setProfile(data as Profile)
+    } catch (e) {
+      console.log("[v0] updateProfile sync error (kept local):", e)
+    }
+  }, [])
 
   const refreshProfile = useCallback(async () => {
-    if (wallet) await loadProfile(wallet)
-  }, [wallet, loadProfile])
+    const address = walletRef.current
+    if (address) await loadProfile(address)
+  }, [loadProfile])
 
   return (
     <AuthContext.Provider

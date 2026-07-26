@@ -126,13 +126,12 @@ export default function NotificationsScreen() {
 
       {unreadCount > 0 && (
         <Button
+          title="Mark all as read"
           variant="secondary"
-          size="small"
+          size="md"
           onPress={handleMarkAllRead}
           style={{ marginBottom: space[4] }}
-        >
-          Mark all as read
-        </Button>
+        />
       )}
 
       {loading ? (

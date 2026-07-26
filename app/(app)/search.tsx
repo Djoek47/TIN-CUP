@@ -72,7 +72,7 @@ export default function SearchScreen() {
 
   return (
     <Screen scroll edges={["bottom"]} contentStyle={{ paddingHorizontal: space[6] }}>
-      <LoadingState visible={loading && searchQuery} message="Searching..." />
+      <LoadingState visible={Boolean(loading && searchQuery)} message="Searching..." />
 
       <View style={{ paddingVertical: space[8] }}>
         <Txt variant="displayL" center>
@@ -176,7 +176,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => router.push(`/beg/${item.id}`)}
+              onPress={() => router.push(`/beg-details?id=${item.id}`)}
               style={{ marginBottom: space[4] }}
             >
               <Card style={{ padding: space[4] }}>

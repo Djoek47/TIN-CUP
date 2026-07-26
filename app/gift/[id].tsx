@@ -231,25 +231,24 @@ export default function GiftScreen() {
               {SPECTACLES.map((s) => (
                 <Button
                   key={s}
+                  title={s}
                   variant={spectacle === s ? "primary" : "secondary"}
-                  size="small"
+                  size="md"
                   onPress={() => setSpectacle(s)}
+                  full={false}
                   style={{ flex: 0 }}
-                >
-                  {s}
-                </Button>
+                />
               ))}
             </View>
           </View>
 
           <Button
+            title="Toss the Gold"
             onPress={handleSendGift}
             loading={sending}
-            size="large"
+            size="lg"
             style={{ marginBottom: space[4] }}
-          >
-            Toss the Gold
-          </Button>
+          />
 
           <Txt variant="bodyS" color={color.text.secondary} center>
             Your balance: {formatCents(profile?.balance_cents ?? 0)}

@@ -1,16 +1,16 @@
 import { ReactNode } from "react"
-import { Pressable, StyleSheet, ViewStyle, ActivityIndicator, View } from "react-native"
+import { Pressable, StyleSheet, ViewStyle, ActivityIndicator, View, Platform } from "react-native"
 import * as Haptics from "expo-haptics"
-import { Platform } from "react-native"
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 import { color, radius, space, font } from "@/theme/tokens"
 import { Txt } from "./Txt"
 
 type Variant = "primary" | "secondary" | "danger" | "ghost" | "cactus"
-type Size = "lg" | "md"
+type Size = "lg" | "md" | "large" | "small"
 
 interface ButtonProps {
-  title: string
+  title?: string
+  children?: ReactNode
   onPress?: () => void
   variant?: Variant
   size?: Size
@@ -37,8 +37,14 @@ const fg: Record<Variant, string> = {
   ghost: color.text.secondary,
 }
 
+function normalizeSize(size: Size): "lg" | "md" {
+  if (size === "large" || size === "lg") return "lg"
+  return "md"
+}
+
 export function Button({
   title,
+  children,
   onPress,
   variant = "primary",
   size = "lg",
@@ -50,6 +56,8 @@ export function Button({
 }: ButtonProps) {
   const scale = useSharedValue(1)
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const resolved = normalizeSize(size)
+  const label = title ?? (typeof children === "string" || typeof children === "number" ? String(children) : null)
 
   const handlePressIn = () => {
     scale.value = withTiming(0.97, { duration: 80 })
@@ -72,9 +80,10 @@ export function Button({
         onPressOut={handlePressOut}
         onPress={handlePress}
         disabled={disabled || loading}
+        accessibilityRole="button"
         style={[
           styles.base,
-          size === "lg" ? styles.lg : styles.md,
+          resolved === "lg" ? styles.lg : styles.md,
           { backgroundColor: bg[variant] },
           variant === "primary" && styles.primaryGold,
           isSecondary && styles.secondaryBorder,
@@ -86,13 +95,17 @@ export function Button({
         ) : (
           <View style={styles.row}>
             {icon}
-            <Txt
-              variant={size === "lg" ? "buttonL" : "buttonM"}
-              color={fg[variant]}
-              style={{ fontFamily: font.headlineBold }}
-            >
-              {title}
-            </Txt>
+            {label != null ? (
+              <Txt
+                variant={resolved === "lg" ? "buttonL" : "buttonM"}
+                color={fg[variant]}
+                style={{ fontFamily: font.headlineBold }}
+              >
+                {label}
+              </Txt>
+            ) : (
+              children
+            )}
           </View>
         )}
       </Pressable>

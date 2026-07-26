@@ -43,17 +43,6 @@ export default function RootLayout() {
               headerShown: false,
               contentStyle: { backgroundColor: color.bg.canvas },
               animation: "slide_from_right",
-              linking: {
-                prefixes: ["tincup://", "https://tincup.app", "https://www.tincup.app"],
-                config: {
-                  screens: {
-                    "(app)": "app",
-                    "beg-details": "beg/:id",
-                    "gift/[id]": "gift/:id",
-                    "profile": "profile/:id",
-                  },
-                },
-              },
             }}
           >
             <Stack.Screen name="index" />

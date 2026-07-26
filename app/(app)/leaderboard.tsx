@@ -255,7 +255,7 @@ export default function LeaderboardScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <Pressable
-            onPress={() => router.push(`/profile/${item.id}`)}
+            onPress={() => router.push("/(app)/profile")}
             style={{ marginBottom: space[3] }}
           >
             <Card
