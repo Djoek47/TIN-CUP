@@ -9,26 +9,27 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated"
-import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { Txt } from "@/components/ui/Txt"
 import { useAuth } from "@/providers/AuthProvider"
 import { color, space } from "@/theme/tokens"
 
+/** Splash aligned to Figma Make — 2.8s coin drop → route */
 export default function Splash() {
   const router = useRouter()
   const { loading, session, profile, configured } = useAuth()
 
-  const coinY = useSharedValue(-90)
+  const coinY = useSharedValue(-80)
   const coinOpacity = useSharedValue(0)
   const coinRotate = useSharedValue(-15)
 
   useEffect(() => {
-    coinOpacity.value = withTiming(1, { duration: 200 })
+    coinOpacity.value = withTiming(1, { duration: 280 })
     coinY.value = withSequence(
-      withTiming(6, { duration: 480, easing: Easing.bezier(0.34, 1.2, 0.64, 1) }),
-      withTiming(0, { duration: 220 }),
+      withTiming(0, { duration: 560, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }),
+      withTiming(-14, { duration: 140 }),
+      withTiming(0, { duration: 160 }),
     )
-    coinRotate.value = withDelay(120, withTiming(0, { duration: 500 }))
+    coinRotate.value = withDelay(120, withTiming(0, { duration: 600 }))
   }, [coinOpacity, coinRotate, coinY])
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function Splash() {
       } else {
         router.replace("/(app)")
       }
-    }, 1200)
+    }, 2800)
     return () => clearTimeout(t)
   }, [loading, session, profile, configured, router])
 
@@ -52,17 +53,15 @@ export default function Splash() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.stack}>
-        <Animated.View style={coinStyle}>
-          <MaterialCommunityIcons name="poker-chip" size={44} color={color.action.primary} />
-        </Animated.View>
-        <MaterialCommunityIcons name="cup" size={78} color={color.text.secondary} style={styles.cup} />
-      </View>
-      <Txt variant="displayL" color={color.action.primary} style={styles.word}>
+      <Animated.Text style={[styles.coin, coinStyle]}>🪙</Animated.Text>
+      <Txt variant="displayXL" color={color.action.primary} style={styles.word}>
         TIN CUP
       </Txt>
-      <Txt variant="caption" color={color.text.tertiary}>
-        PERDITION GULCH · v1.0
+      <Txt variant="overline" color={color.text.tertiary} style={styles.sub}>
+        Perdition Gulch
+      </Txt>
+      <Txt variant="caption" color={color.text.tertiary} style={styles.ver}>
+        v1.0 · Season 1: Gold Rush
       </Txt>
     </View>
   )
@@ -74,9 +73,14 @@ const styles = StyleSheet.create({
     backgroundColor: color.bg.canvas,
     alignItems: "center",
     justifyContent: "center",
-    gap: space[3],
   },
-  stack: { height: 120, alignItems: "center", justifyContent: "flex-end" },
-  cup: { marginTop: -14 },
-  word: { marginTop: space[4] },
+  coin: { fontSize: 60, marginBottom: space[5] },
+  word: {
+    letterSpacing: 2,
+    textShadowColor: "rgba(245,179,43,0.4)",
+    textShadowRadius: 40,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  sub: { marginTop: space[3], letterSpacing: 4 },
+  ver: { position: "absolute", bottom: 36 },
 })

@@ -42,6 +42,10 @@ export const primitive = {
   dust: {
     500: "#8C7A5B", // coin-dust currency accent
   },
+  parchment: {
+    100: "#F4EEDD",
+    300: "#E4DAC0",
+  },
   sky: {
     500: "#4E7DA6", // links / informational
   },
@@ -92,6 +96,8 @@ export const color = {
     warning: primitive.gold[600],
   },
   dust: primitive.dust[500],
+  parchment: primitive.parchment[100],
+  parchmentEdge: primitive.parchment[300],
   link: primitive.sky[500],
   overlay: {
     scrim: "rgba(11,14,20,0.72)",

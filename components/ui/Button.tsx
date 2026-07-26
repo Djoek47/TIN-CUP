@@ -76,6 +76,7 @@ export function Button({
           styles.base,
           size === "lg" ? styles.lg : styles.md,
           { backgroundColor: bg[variant] },
+          variant === "primary" && styles.primaryGold,
           isSecondary && styles.secondaryBorder,
           (disabled || loading) && styles.disabled,
         ]}
@@ -106,8 +107,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lg: { height: 54, paddingHorizontal: space[5] },
+  lg: { height: 56, paddingHorizontal: space[5], borderRadius: radius.m },
   md: { height: 44, paddingHorizontal: space[4] },
+  primaryGold: {
+    backgroundColor: color.action.primaryHover,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    borderTopColor: "rgba(255,255,255,0.4)",
+    shadowColor: color.action.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
   secondaryBorder: {
     borderWidth: 1,
     borderColor: "rgba(245,179,43,0.24)",

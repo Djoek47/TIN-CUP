@@ -1,6 +1,7 @@
 import { ReactNode } from "react"
 import { View, StyleSheet, ViewStyle, Pressable } from "react-native"
-import { color, radius, space, elevation } from "@/theme/tokens"
+import { space, elevation } from "@/theme/tokens"
+import { glass } from "@/theme/glass"
 
 interface CardProps {
   children: ReactNode
@@ -10,13 +11,14 @@ interface CardProps {
   glow?: boolean
 }
 
+/** Glass card surface from Figma Make Tin-Cup-V2 */
 export function Card({ children, style, onPress, padded = true, glow }: CardProps) {
   const content = (
     <View
       style={[
-        styles.card,
+        glass.card,
         padded && styles.padded,
-        glow ? elevation.gold : elevation.card,
+        glow ? elevation.gold : undefined,
         glow && styles.glowBorder,
         style,
       ]}
@@ -35,13 +37,7 @@ export function Card({ children, style, onPress, padded = true, glow }: CardProp
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: color.bg.card,
-    borderRadius: radius.m,
-    borderWidth: 1,
-    borderColor: color.border.subtle,
-  },
   padded: { padding: space[4] },
-  glowBorder: { borderColor: "rgba(245,179,43,0.4)" },
+  glowBorder: { borderColor: "rgba(245,179,43,0.4)", borderTopColor: "rgba(245,179,43,0.55)" },
   pressed: { opacity: 0.85, transform: [{ scale: 0.995 }] },
 })

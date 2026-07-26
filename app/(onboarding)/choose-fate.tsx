@@ -1,26 +1,23 @@
 import { useState } from "react"
-import { View, ScrollView, Pressable, Alert } from "react-native"
+import { View, Pressable, Alert, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
-import { Card } from "@/components/ui/Card"
 import { useAuth } from "@/providers/AuthProvider"
 import { supabase } from "@/lib/supabase"
-import { color, space } from "@/theme/tokens"
+import { color, space, font } from "@/theme/tokens"
+import { glass } from "@/theme/glass"
 
+/** Choose Your Fate — Vagrant / Lord accordion from Figma Make */
 export default function ChooseFate() {
   const router = useRouter()
-  const { profile, wallet, signer, updateProfile } = useAuth()
-  const [selected, setSelected] = useState<"drifter" | "lord" | null>(null)
+  const { profile, wallet, updateProfile } = useAuth()
+  const [expanded, setExpanded] = useState<"vagrant" | "lord" | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const drifterDescription = "Free entry. No buy-in. Just guts and glory. Beg for spare coins or gift to strangers."
-  const lordDescription = "Pay $100 USDT to join the Monarch's Circle. Your gifts land heavier. Earn a cut on every coin that flows through the gulch."
-
-  const handleConfirm = async () => {
-    if (!selected || !wallet || !profile?.id) {
+  const choose = async (fate: "vagrant" | "lord") => {
+    if (!wallet || !profile?.id) {
       setError("Wallet not connected")
       return
     }
@@ -29,37 +26,21 @@ export default function ChooseFate() {
     setError("")
 
     try {
-      let txHash = ""
-
-      if (selected === "lord") {
-        console.log("[v0] Processing Lord membership: $100 USDT")
-
-        // Use RPC function for atomic Lord membership purchase
-        const { data, error } = await supabase.rpc("become_lord", {
-          p_amount_cents: 10000, // $100
+      if (fate === "lord") {
+        const { error: rpcError } = await supabase.rpc("become_lord", {
+          p_amount_cents: 10000,
         })
-
-        if (error) {
-          console.log("[v0] Lord membership error:", error)
-          throw error
-        }
-
-        console.log("[v0] Lord membership success:", data)
-        Alert.alert("Welcome, Lord", "You have ascended to the Monarch's Circle. Your gifts now carry more weight.")
-      } else {
-        console.log("[v0] Becoming Drifter (free)")
+        if (rpcError) throw rpcError
+        Alert.alert("Welcome, Lord", "You have ascended. Lords never fall — and never go back.")
       }
 
-      // Update profile with fate selection
+      // DB still uses fate: drifter | lord
       await updateProfile({
-        fate: selected,
-        is_lord: selected === "lord",
+        fate: fate === "vagrant" ? "drifter" : "lord",
+        is_lord: fate === "lord",
       })
-
-      console.log("[v0] Profile updated, moving to character creation")
       router.push("/(onboarding)/create")
     } catch (e: any) {
-      console.log("[v0] Choose fate error:", e)
       setError(e.message || "Transaction failed")
       Alert.alert("Error", e.message || "Failed to complete transaction")
     } finally {
@@ -68,108 +49,148 @@ export default function ChooseFate() {
   }
 
   return (
-    <Screen scroll edges={["bottom"]} contentStyle={{ paddingHorizontal: space[6] }}>
-      <View style={{ paddingVertical: space[8] }}>
-        <Txt variant="displayL" center>
-          CHOOSE YOUR FATE
+    <Screen edges={["top", "bottom"]} contentStyle={{ paddingHorizontal: space[4], flex: 1 }}>
+      <View style={{ paddingTop: space[7], paddingBottom: space[4], alignItems: "center" }}>
+        <Txt variant="overline" color={color.text.tertiary}>
+          PERDITION GULCH
         </Txt>
-        <Txt variant="bodyM" color={color.text.secondary} center style={{ marginTop: space[3] }}>
-          You&apos;re in the Gulch now. Pick your way.
+        <Txt variant="displayM" center style={{ marginTop: space[1] }}>
+          Choose Your Fate
         </Txt>
-        {error && (
-          <Card style={{ backgroundColor: color.action.danger, marginTop: space[4], padding: space[3] }}>
-            <Txt variant="bodyS" color={color.text.inverse}>{error}</Txt>
-          </Card>
-        )}
+        {error ? (
+          <Txt variant="bodyS" color={color.action.danger} center style={{ marginTop: space[3] }}>
+            {error}
+          </Txt>
+        ) : null}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} scrollEventThrottle={16} style={{ marginVertical: space[6] }}>
-        {/* DRIFTER */}
+      <View style={styles.row}>
+        {/* VAGRANT — parchment */}
         <Pressable
-          onPress={() => setSelected("drifter")}
-          style={{
-            marginRight: space[4],
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
+          onPress={() => setExpanded(expanded === "vagrant" ? null : "vagrant")}
+          style={[
+            styles.panel,
+            glass.parchment,
+            { flex: expanded === "vagrant" ? 7 : expanded === "lord" ? 3 : 5 },
+            expanded === "vagrant" && { borderColor: color.action.primary },
+          ]}
         >
-          <Card
-            style={{
-              backgroundColor: selected === "drifter" ? color.surface.drifter : color.surface.idle,
-              borderWidth: selected === "drifter" ? 2 : 0,
-              borderColor: selected === "drifter" ? color.action.primary : "transparent",
-              width: 280,
-              paddingVertical: space[8],
-              paddingHorizontal: space[6],
-            }}
+          <Txt variant="overline" color={color.dust}>
+            THE DRIFTER
+          </Txt>
+          <Txt style={{ fontSize: 48, marginVertical: space[2] }}>🤠</Txt>
+          <Txt
+            variant="displayM"
+            color={color.text.inverse}
+            style={{ fontFamily: font.display, fontSize: 16 }}
           >
-            <Txt variant="headlineXL" color={selected === "drifter" ? color.text.primary : color.text.secondary} center>
-              DRIFTER
+            VAGRANT
+          </Txt>
+          {expanded === "vagrant" && (
+            <Txt variant="bodyS" color={color.dust} center style={{ marginTop: space[2] }}>
+              Roll in with nothing but a tin cup and a story. Beg, perform, climb.
             </Txt>
-            <Txt variant="bodyS" color={selected === "drifter" ? color.text.primary : color.text.tertiary} center style={{ marginTop: space[3], marginBottom: space[6] }}>
-              {drifterDescription}
+          )}
+          <View style={[styles.chip, { backgroundColor: "rgba(140,122,91,0.18)", marginTop: space[3] }]}>
+            <Txt variant="numericS" color={color.dust}>
+              FREE
             </Txt>
-            <View
-              style={{
-                backgroundColor: selected === "drifter" ? color.action.primary : color.border.subtle,
-                height: 60,
-                borderRadius: 8,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
+          </View>
+          {expanded === "vagrant" && (
+            <Pressable
+              disabled={loading}
+              onPress={() => choose("vagrant")}
+              style={[styles.ctaDark, glass.card, { marginTop: space[4] }]}
             >
-              <Txt variant="buttonL" color={selected === "drifter" ? color.text.inverse : color.text.secondary}>
-                FREE
+              <Txt variant="buttonM" color={color.text.primary}>
+                Take the cup
               </Txt>
-            </View>
-          </Card>
+            </Pressable>
+          )}
         </Pressable>
+
+        <View style={styles.rope}>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <View key={i} style={[styles.ropeKnot, { opacity: 0.35 + (i % 2) * 0.2 }]} />
+          ))}
+        </View>
 
         {/* LORD */}
-        <Pressable onPress={() => setSelected("lord")}>
-          <Card
-            style={{
-              backgroundColor: selected === "lord" ? color.surface.lord : color.surface.idle,
-              borderWidth: selected === "lord" ? 2 : 0,
-              borderColor: selected === "lord" ? color.action.primary : "transparent",
-              width: 280,
-              paddingVertical: space[8],
-              paddingHorizontal: space[6],
-            }}
-          >
-            <Txt variant="headlineXL" color={selected === "lord" ? color.action.primary : color.text.secondary} center>
-              MONARCH
-            </Txt>
-            <Txt variant="bodyS" color={selected === "lord" ? color.text.primary : color.text.tertiary} center style={{ marginTop: space[3], marginBottom: space[6] }}>
-              {lordDescription}
-            </Txt>
-            <View
-              style={{
-                backgroundColor: selected === "lord" ? color.action.primary : color.border.subtle,
-                height: 60,
-                borderRadius: 8,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Txt variant="buttonL" color={selected === "lord" ? color.text.inverse : color.text.secondary}>
-                $100 BUY-IN
-              </Txt>
-            </View>
-          </Card>
-        </Pressable>
-      </ScrollView>
-
-      <View style={{ marginTop: "auto", marginBottom: space[6] }}>
-        <Button
-          onPress={handleConfirm}
-          disabled={!selected || loading}
-          loading={loading}
-          size="large"
+        <Pressable
+          onPress={() => setExpanded(expanded === "lord" ? null : "lord")}
+          style={[
+            styles.panel,
+            glass.elevated,
+            { flex: expanded === "lord" ? 7 : expanded === "vagrant" ? 3 : 5 },
+            expanded === "lord" && { borderColor: color.action.primary, borderWidth: 2 },
+          ]}
         >
-          Take the Cup
-        </Button>
+          <Txt variant="overline" color={color.text.tertiary}>
+            THE LORD
+          </Txt>
+          <Txt style={{ fontSize: 48, marginVertical: space[2] }}>🎩</Txt>
+          <Txt variant="displayM" color={color.action.primary} style={{ fontSize: 16 }}>
+            LORD
+          </Txt>
+          {expanded === "lord" && (
+            <Txt variant="bodyS" color={color.text.secondary} center style={{ marginTop: space[2] }}>
+              Ride in with finery. Set bounties, run your Court, and rain gold.
+            </Txt>
+          )}
+          <View style={[styles.chip, glass.gold, { marginTop: space[3] }]}>
+            <Txt variant="numericS" color={color.action.primary}>
+              $100 BUY-IN
+            </Txt>
+          </View>
+          {expanded === "lord" && (
+            <Pressable
+              disabled={loading}
+              onPress={() => choose("lord")}
+              style={[styles.ctaGold, { marginTop: space[4] }]}
+            >
+              <Txt variant="buttonM" color={color.text.inverse}>
+                Claim your title
+              </Txt>
+            </Pressable>
+          )}
+        </Pressable>
       </View>
+
+      <Txt variant="caption" color={color.text.tertiary} center style={{ paddingVertical: space[5] }}>
+        Drifters can rise. Lords never fall — and never go back.
+      </Txt>
     </Screen>
   )
 }
+
+const styles = StyleSheet.create({
+  row: { flex: 1, flexDirection: "row", gap: 8, minHeight: 0 },
+  panel: {
+    padding: space[4],
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  chip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
+  ctaDark: {
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  ctaGold: {
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: color.action.primaryHover,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  rope: { width: 10, alignItems: "center", justifyContent: "center", gap: 3 },
+  ropeKnot: {
+    width: 3,
+    height: 12,
+    borderRadius: 2,
+    backgroundColor: color.dust,
+  },
+})
