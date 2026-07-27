@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from "react-native"
+import { Pressable, StyleSheet } from "react-native"
 import { Txt } from "@/components/ui/Txt"
 import { glass } from "@/theme/glass"
 import { color, font } from "@/theme/tokens"
