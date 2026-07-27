@@ -1,238 +1,143 @@
-import { useEffect, useState } from "react"
-import { View, ScrollView, Pressable, StyleSheet } from "react-native"
+import { ScrollView, View, Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
-import { MaterialCommunityIcons } from "@expo/vector-icons"
-import { Screen } from "@/components/ui/Screen"
+import { TopAppBar, BegCard, ChallengeCard, StreamCard, CoinAmount } from "@/components/gds"
 import { Txt } from "@/components/ui/Txt"
-import { Card } from "@/components/ui/Card"
+import { BEGS, CHALLENGES, STREAMS, LEADERBOARD } from "@/lib/make-data"
 import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { color, space, font } from "@/theme/tokens"
 import { glass } from "@/theme/glass"
-import { Beg, Profile } from "@/lib/types"
-import { formatCents } from "@/lib/format"
+import { color, font, space } from "@/theme/tokens"
 
-/** Main Street — Figma Make Tin-Cup-V2 layout */
-export default function MainStreetScreen() {
+/** S13 Main Street — Make modules */
+export default function MainStreet() {
   const router = useRouter()
   const { profile } = useAuth()
-  const [begs, setBegs] = useState<(Beg & { author: Profile })[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const loadBegs = async () => {
-      const { data, error } = await supabase
-        .from("begs")
-        .select("*, author:author_id(display_name, title, face, hat)")
-        .order("created_at", { ascending: false })
-        .limit(20)
-
-      if (!error && data) {
-        setBegs(data as any)
-      }
-      setLoading(false)
-    }
-
-    loadBegs()
-  }, [])
-
-  const progressPercent = (beg: Beg) => {
-    if (beg.goal_cents === 0) return 100
-    return Math.min(100, Math.round((beg.raised_cents / beg.goal_cents) * 100))
-  }
-
-  const openBegs = begs.filter((b) => b.status === "open")
+  const balance = profile?.coins ?? 1240
 
   return (
-    <Screen scroll padded edges={["top"]} contentStyle={{ paddingBottom: 120 }}>
-      {/* TopBar — PERDITION GULCH / Main Street + gold balance + bell */}
-      <View style={styles.topBar}>
-        <View>
-          <Txt variant="overline" color={color.text.tertiary}>
-            PERDITION GULCH
-          </Txt>
-          <Txt variant="headlineL" style={{ fontFamily: font.headlineBlack, marginTop: 2 }}>
-            Main Street
-          </Txt>
-        </View>
-        <View style={styles.topActions}>
-          <Pressable
-            style={[styles.balancePill, glass.gold]}
-            onPress={() => router.push("/(app)/wallet")}
-          >
-            <Txt variant="numericS" color={color.action.primary}>
-              🪙 {formatCents(profile?.balance_cents ?? 0).replace("$", "")}
-            </Txt>
-          </Pressable>
-          <Pressable
-            style={[styles.bell, glass.card]}
-            onPress={() => router.push("/(app)/notifications")}
-          >
-            <MaterialCommunityIcons name="bell-outline" size={18} color={color.text.secondary} />
-            <View style={styles.bellDot} />
-          </Pressable>
-        </View>
-      </View>
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+        <TopAppBar
+          overline="PERDITION GULCH"
+          title="Main Street"
+          balance={balance}
+          onWallet={() => router.push("/(app)/wallet")}
+          onBell={() => router.push("/(app)/notifications")}
+        />
 
-      {/* LIVE NOW */}
-      <Txt variant="overline" color={color.text.secondary} style={styles.section}>
-        LIVE NOW
-      </Txt>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: space[5] }}>
-        {(openBegs.length ? openBegs : begs).slice(0, 5).map((beg) => (
-          <Pressable key={beg.id} onPress={() => router.push(`/gift/${beg.id}`)}>
-            <Card style={styles.streamCard} padded={false}>
-              <View style={styles.streamThumb}>
-                <Txt style={{ fontSize: 30 }}>🎪</Txt>
-                <View style={styles.liveChip}>
-                  <View style={styles.liveDot} />
-                  <Txt variant="overline" color={color.text.primary} style={{ fontSize: 9 }}>
-                    LIVE
-                  </Txt>
-                </View>
+        <View style={styles.section}>
+          <Txt style={styles.sectionLabel}>LIVE NOW</Txt>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+            {STREAMS.map((s) => (
+              <StreamCard key={s.id} stream={s} onPress={() => router.push("/(app)/live-stream")} />
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <Txt style={styles.sectionLabel}>TRENDING BEGS</Txt>
+          <View style={styles.grid}>
+            {BEGS.slice(0, 4).map((beg) => (
+              <View key={beg.id} style={styles.gridItem}>
+                <BegCard beg={beg} onPress={() => router.push(`/beg-details?id=${beg.id}`)} />
               </View>
-              <View style={{ padding: space[2] }}>
-                <Txt variant="headlineS" numberOfLines={1}>
-                  {(beg as any).author?.display_name ?? beg.title}
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Txt style={styles.sectionLabel}>ACTIVE BOUNTIES</Txt>
+          <ChallengeCard
+            challenge={CHALLENGES[0]}
+            onPress={() => router.push(`/challenge-details?id=${CHALLENGES[0].id}`)}
+          />
+        </View>
+
+        <View style={[styles.teaser, glass.card]}>
+          <View style={styles.teaserHead}>
+            <Txt style={{ fontFamily: font.headlineBold, fontSize: 14, color: color.text.primary }}>
+              Richest Barons
+            </Txt>
+            <Pressable onPress={() => router.push("/(app)/leaderboard")}>
+              <Txt style={{ fontFamily: font.headlineBold, fontSize: 12, color: color.action.primary }}>
+                Full board →
+              </Txt>
+            </Pressable>
+          </View>
+          {LEADERBOARD.slice(0, 3).map((row) => (
+            <View key={row.rank} style={styles.lbRow}>
+              <View style={[styles.medal, row.rank === 1 ? glass.gold : { backgroundColor: "rgba(255,255,255,0.06)" }]}>
+                <Txt
+                  style={{
+                    fontFamily: font.display,
+                    fontSize: 10,
+                    color: [color.action.primary, color.text.secondary, color.dust][row.rank - 1],
+                  }}
+                >
+                  {row.rank}
                 </Txt>
               </View>
-            </Card>
-          </Pressable>
-        ))}
-        {!loading && begs.length === 0 && (
-          <Card style={{ width: 200, marginRight: space[3] }}>
-            <Txt variant="bodyS" color={color.text.secondary}>
-              No live begs yet. Post one from the gold cup.
-            </Txt>
-          </Card>
-        )}
-      </ScrollView>
-
-      {/* TRENDING BEGS */}
-      <Txt variant="overline" color={color.text.secondary} style={styles.section}>
-        TRENDING BEGS
-      </Txt>
-      <View style={styles.grid}>
-        {begs.slice(0, 4).map((beg) => (
-          <Pressable
-            key={beg.id}
-            style={styles.gridItem}
-            onPress={() => router.push(`/beg-details?id=${beg.id}`)}
-          >
-            <Card style={{ flex: 1 }} padded>
-              <Txt variant="overline" color={color.dust} style={{ marginBottom: space[2] }}>
-                BEG
+              <Txt style={{ fontFamily: font.headlineBold, fontSize: 13, color: color.text.primary, flex: 1 }}>
+                {row.name}
               </Txt>
-              <View style={{ flexDirection: "row", gap: space[2], marginBottom: space[2] }}>
-                <View style={[styles.avatar, glass.elevated]}>
-                  <Txt style={{ fontSize: 20 }}>{(beg as any).author?.face ?? "🤠"}</Txt>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt variant="headlineS" numberOfLines={2}>
-                    {beg.title}
-                  </Txt>
-                  <Txt variant="caption" color={color.text.secondary} numberOfLines={1}>
-                    {(beg as any).author?.display_name ?? "Outlaw"}
-                  </Txt>
-                </View>
-              </View>
-              <View style={styles.goalTrack}>
-                <View style={[styles.goalFill, { width: `${progressPercent(beg)}%` }]} />
-              </View>
-              <Txt variant="numericS" color={color.action.primary} style={{ marginTop: space[2] }}>
-                🪙 {formatCents(beg.raised_cents).replace("$", "")}
-              </Txt>
-            </Card>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Leaderboard teaser */}
-      <Card style={{ marginTop: space[5] }} onPress={() => router.push("/(app)/leaderboard")}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Txt variant="headlineM">Richest Barons</Txt>
-          <Txt variant="buttonM" color={color.action.primary}>
-            Full board →
-          </Txt>
+              <CoinAmount value={row.value} size="S" />
+            </View>
+          ))}
         </View>
-      </Card>
-    </Screen>
+
+        <Pressable
+          onPress={() => router.push("/(app)/notifications")}
+          style={[styles.lucky, glass.gold]}
+        >
+          <Txt style={{ fontSize: 22 }}>⏰</Txt>
+          <View style={{ flex: 1 }}>
+            <Txt style={{ fontFamily: font.headlineBold, fontSize: 13, color: color.action.primary }}>
+              Lucky Hour in 23 minutes
+            </Txt>
+            <Txt style={{ fontFamily: font.body, fontSize: 11, color: color.text.secondary }}>
+              2× visibility for all active begs · 9–10 PM
+            </Txt>
+          </View>
+        </Pressable>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  topBar: {
+  root: { flex: 1, backgroundColor: color.bg.canvas },
+  section: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  sectionLabel: {
+    fontFamily: font.headlineBlack,
+    fontSize: 11,
+    color: color.text.secondary,
+    marginBottom: 10,
+    letterSpacing: 1,
+  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  gridItem: { width: "48%", flexGrow: 1 },
+  teaser: { margin: 16, borderRadius: 16, padding: 16 },
+  teaserHead: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: space[5],
+    alignItems: "center",
+    marginBottom: 12,
   },
-  topActions: { flexDirection: "row", alignItems: "center", gap: space[2] },
-  balancePill: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 999,
-  },
-  bell: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  lbRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  medal: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
-  bellDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: color.status.live,
-  },
-  section: { marginBottom: space[3], letterSpacing: 1.2 },
-  streamCard: { width: 136, marginRight: space[3], overflow: "hidden" },
-  streamThumb: {
-    height: 88,
-    backgroundColor: color.bg.sheet,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  liveChip: {
-    position: "absolute",
-    top: 6,
-    left: 6,
+  lucky: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: color.action.danger,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#fff",
-  },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: space[3] },
-  gridItem: { width: "48%", flexGrow: 1 },
-  avatar: {
-    width: 38,
-    height: 46,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  goalTrack: {
-    height: 5,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    overflow: "hidden",
-  },
-  goalFill: {
-    height: "100%",
-    backgroundColor: color.action.primary,
-    borderRadius: 4,
+    gap: 12,
   },
 })

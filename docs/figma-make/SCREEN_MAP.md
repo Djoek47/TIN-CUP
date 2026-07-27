@@ -1,6 +1,6 @@
 # Tin-Cup-V2 Make → Expo Router map
 
-Source of truth: [`Tin-Cup-V2-App.tsx`](./Tin-Cup-V2-App.tsx)
+Source of truth: [`Tin-Cup-V2-App.tsx.txt`](./Tin-Cup-V2-App.tsx)
 
 | Make screen / tab / sub | Expo route |
 |---|---|

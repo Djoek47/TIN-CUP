@@ -2,57 +2,51 @@
 
 > "Where strangers throw real gold at strangers — for glory, for laughs, for the story."
 
-iPhone & Android social tipping app. Expo Router + Supabase + Gulch Design System.
+Mobile app ported from **Figma Make Tin-Cup-V2** + Stage 1/2 product specs. Expo SDK 54 · Gulch Design System · thirdweb wallet.
 
-**Expo SDK 54** — matches the App Store / Play Store Expo Go build. (SDK 55–57 are not in store Expo Go yet.)
-
-## Quick start (Expo Go — mobile)
+## Quick start (Expo Go)
 
 ```bash
 npm install
 cp .env.example .env.local
+# Set EXPO_PUBLIC_THIRDWEB_CLIENT_ID from https://dashboard.thirdweb.com
 npm run dev
 ```
 
-1. Install **Expo Go** from the App Store / Play Store (latest store build = SDK 54)
-2. Scan the QR code from the terminal:
-   - **iPhone:** Camera app → opens in Expo Go
-   - **Android:** Expo Go → Scan QR code
-3. App loads on device (splash → welcome / Main Street)
+1. Install **Expo Go** (SDK 54 store build)
+2. Scan the tunnel QR
+3. Flow: Splash → Welcome → Choose Fate → Character Creator → Main Street
 
-`npm run dev` uses Expo tunnel so phones can reach the cloud/dev host.
+Without a thirdweb client ID the app still walks the Make UI on a local demo seat.
 
-## Scripts
+**Expo Go note:** native thirdweb in-app wallets (`thirdweb/wallets`) cannot load inside Expo Go (AWS KMS / QuickCrypto / Coinbase MWP). Identity uses a local `0x` seat there; failed on-chain attempts show **No gold moved.** Real USDT + in-app wallet need a custom/dev client build with the same AuthProvider call sites.
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Mobile test server (Expo Go via tunnel) |
-| `npm run dev:lan` | Expo Go over LAN (`exp://…`) |
-| `npm start` | Expo Dev Tools |
-| `npm run ios` / `android` | Open simulator / emulator |
+## Make parity screens
+
+Entry: Splash, Welcome, Choose Fate, Character Creator  
+Tabs: Main Street, Feed of Madness, Lobbies, Wanted Poster (+ ActionOrb)  
+Subs: Wallet, Deposit, Cash Out, Beg Detail, Challenge Detail, Composer, Live Stream, Notifications, Search, Leaderboard, Ascension, PONR, Coronation
+
+Source snapshot: `docs/figma-make/` · Product bible: `docs/stage/`
 
 ## Stack
 
-- React Native + Expo 57 (Router)
-- TypeScript
-- Supabase (Postgres + RLS)
-- ethers / thirdweb (Polygon Mumbai test)
-- Gulch tokens in `theme/tokens.ts`
-
-## Docs
-
-1. `READY_TO_CURSOR.md` — 5-minute overview
-2. `FINAL_HANDOFF.md` — architecture & features
-3. `START_TESTING.md` — testing checklist
-4. `PAYMENT_FLOWS_GUIDE.md` — payment RPCs
+- Expo Router 54 / React Native
+- GDS components in `components/gds/`
+- thirdweb v5 (`inAppWallet` guest + USDT on Polygon Amoy)
+- Supabase profiles / begs when configured
 
 ## Env
 
-`.env.local` (from `.env.example`):
+| Var | Purpose |
+|---|---|
+| `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | Wallet + chain (required for real money) |
+| `EXPO_PUBLIC_USDT_ADDRESS` | Test USDT |
+| `EXPO_PUBLIC_PROJECT_WALLET` | Lord $100 stake recipient |
+| `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | Profiles & begs |
 
-- `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (defaults also in `app.json` → `extra`)
-- `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` (optional)
+Failed money ops always surface: **No gold moved.**
 
 ---
 
-*Season 1: Gold Rush · Perdition Gulch*
+*Season 1: Gold Rush · The Gulch Design System*

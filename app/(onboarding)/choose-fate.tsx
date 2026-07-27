@@ -1,140 +1,122 @@
 import { useState } from "react"
-import { View, Pressable, Alert, StyleSheet, ActivityIndicator } from "react-native"
+import { View, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native"
 import { useRouter } from "expo-router"
-import { Screen } from "@/components/ui/Screen"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { Txt } from "@/components/ui/Txt"
 import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { color, space, font } from "@/theme/tokens"
+import { MONEY_FAIL_COPY } from "@/lib/thirdweb"
 import { glass } from "@/theme/glass"
+import { color, font, space } from "@/theme/tokens"
 
-/** Choose Your Fate — Vagrant / Lord accordion from Figma Make */
+/** S08 Choose Your Fate — Make diptych */
 export default function ChooseFate() {
   const router = useRouter()
-  const { profile, wallet, connectWallet, updateProfile } = useAuth()
+  const insets = useSafeAreaInsets()
+  const { connectWallet, wallet, profile, updateProfile, ascendLord } = useAuth()
   const [expanded, setExpanded] = useState<"vagrant" | "lord" | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
 
   const choose = async (fate: "vagrant" | "lord") => {
     if (loading) return
     setLoading(true)
-    setError("")
-
     try {
-      let activeWallet = wallet
-      let activeProfile = profile
-
-      if (!activeWallet || !activeProfile?.id) {
-        activeProfile = await connectWallet()
-        activeWallet = activeProfile?.id ?? null
-      }
-
-      if (!activeWallet || !activeProfile?.id) {
-        throw new Error("Could not open a seat in town. Try again.")
-      }
-
+      if (!wallet || !profile?.id) await connectWallet()
       if (fate === "lord") {
-        // Best-effort RPC — Expo Go demo still advances if backend isn't ready
         try {
-          const { error: rpcError } = await supabase.rpc("become_lord", {
-            p_amount_cents: 10000,
-          })
-          if (rpcError) console.log("[v0] become_lord RPC skipped:", rpcError.message)
-        } catch (e) {
-          console.log("[v0] become_lord offline path:", e)
+          await ascendLord()
+        } catch (e: any) {
+          Alert.alert("Error", e?.message || MONEY_FAIL_COPY)
+          setLoading(false)
+          return
         }
-        Alert.alert("Welcome, Lord", "You have ascended. Lords never fall — and never go back.")
+      } else {
+        await updateProfile({ fate: "drifter", is_lord: false })
       }
-
-      await updateProfile({
-        fate: fate === "vagrant" ? "drifter" : "lord",
-        is_lord: fate === "lord",
-      })
       router.push("/(onboarding)/create")
     } catch (e: any) {
-      const msg = e?.message || "Failed to choose fate"
-      setError(msg)
-      Alert.alert("Error", msg)
+      Alert.alert("Error", e?.message || "Failed to choose fate")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Screen edges={["top", "bottom"]} contentStyle={{ paddingHorizontal: space[4], flex: 1 }}>
-      <View style={{ paddingTop: space[7], paddingBottom: space[4], alignItems: "center" }}>
-        <Txt variant="overline" color={color.text.tertiary}>
+    <View style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 8 }]}>
+      <View style={styles.header}>
+        <Txt
+          style={{
+            fontFamily: font.headlineBlack,
+            fontSize: 10,
+            letterSpacing: 1.4,
+            textTransform: "uppercase",
+            color: color.text.tertiary,
+            marginBottom: 5,
+          }}
+        >
           PERDITION GULCH
         </Txt>
-        <Txt variant="displayM" center style={{ marginTop: space[1] }}>
+        <Txt style={{ fontFamily: font.display, fontSize: 28, color: color.text.primary, letterSpacing: 0.5 }}>
           Choose Your Fate
         </Txt>
-        {error ? (
-          <Txt variant="bodyS" color={color.action.danger} center style={{ marginTop: space[3] }}>
-            {error}
-          </Txt>
-        ) : null}
       </View>
 
       <View style={styles.row}>
-        {/* VAGRANT — parchment */}
         <Pressable
           onPress={() => setExpanded(expanded === "vagrant" ? null : "vagrant")}
           style={[
             styles.panel,
-            glass.parchment,
+            styles.parchment,
             { flex: expanded === "vagrant" ? 7 : expanded === "lord" ? 3 : 5 },
             expanded === "vagrant" && { borderColor: color.action.primary },
           ]}
           disabled={loading}
         >
-          <Txt variant="overline" color={color.dust}>
-            THE DRIFTER
-          </Txt>
-          <Txt style={{ fontSize: 48, marginVertical: space[2] }}>🤠</Txt>
-          <Txt
-            variant="displayM"
-            color={color.text.inverse}
-            style={{ fontFamily: font.display, fontSize: 16 }}
-          >
+          <Txt style={styles.overDust}>THE DRIFTER</Txt>
+          <Txt style={{ fontSize: 48, marginVertical: 8 }}>🤠</Txt>
+          <Txt style={{ fontFamily: font.display, fontSize: 16, color: color.text.inverse, letterSpacing: 0.5 }}>
             VAGRANT
           </Txt>
-          {expanded === "vagrant" && (
-            <Txt variant="bodyS" color={color.dust} center style={{ marginTop: space[2] }}>
-              Roll in with nothing but a tin cup and a story. Beg, perform, climb.
+          {expanded === "vagrant" ? (
+            <Txt
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: color.dust,
+                lineHeight: 18,
+                marginTop: 10,
+                textAlign: "center",
+              }}
+            >
+              Roll in with nothing but a tin cup and a story. Beg, perform, climb. Fortunes change in Perdition Gulch.
             </Txt>
-          )}
-          <View style={[styles.chip, { backgroundColor: "rgba(140,122,91,0.18)", marginTop: space[3] }]}>
-            <Txt variant="numericS" color={color.dust}>
-              FREE
-            </Txt>
+          ) : null}
+          <View style={[styles.chip, { backgroundColor: "rgba(140,122,91,0.18)", marginTop: 10 }]}>
+            <Txt style={{ fontFamily: font.mono, fontSize: 11, color: color.dust, fontWeight: "700" }}>FREE</Txt>
           </View>
-          {expanded === "vagrant" && (
+          {expanded === "vagrant" ? (
             <Pressable
               disabled={loading}
               onPress={() => choose("vagrant")}
-              style={[styles.ctaDark, glass.card, { marginTop: space[4] }]}
+              style={[styles.ctaDark, glass.card]}
               accessibilityRole="button"
             >
               {loading ? (
                 <ActivityIndicator color={color.text.primary} />
               ) : (
-                <Txt variant="buttonM" color={color.text.primary}>
+                <Txt style={{ fontFamily: font.headlineBold, fontSize: 14, color: color.text.primary }}>
                   Take the cup
                 </Txt>
               )}
             </Pressable>
-          )}
+          ) : null}
         </Pressable>
 
         <View style={styles.rope}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <View key={i} style={[styles.ropeKnot, { opacity: 0.35 + (i % 2) * 0.2 }]} />
+          {Array.from({ length: 14 }).map((_, i) => (
+            <View key={i} style={[styles.ropeKnot, { opacity: 0.4 + (i % 2) * 0.2 }]} />
           ))}
         </View>
 
-        {/* LORD */}
         <Pressable
           onPress={() => setExpanded(expanded === "lord" ? null : "lord")}
           style={[
@@ -145,55 +127,109 @@ export default function ChooseFate() {
           ]}
           disabled={loading}
         >
-          <Txt variant="overline" color={color.text.tertiary}>
-            THE LORD
-          </Txt>
-          <Txt style={{ fontSize: 48, marginVertical: space[2] }}>🎩</Txt>
-          <Txt variant="displayM" color={color.action.primary} style={{ fontSize: 16 }}>
+          <Txt style={styles.overLo}>THE LORD</Txt>
+          <Txt style={{ fontSize: 48, marginVertical: 8 }}>🎩</Txt>
+          <Txt
+            style={{
+              fontFamily: font.display,
+              fontSize: 16,
+              color: color.action.primary,
+              letterSpacing: 0.5,
+              textShadowColor: "rgba(245,179,43,0.4)",
+              textShadowRadius: 18,
+              textShadowOffset: { width: 0, height: 0 },
+            }}
+          >
             LORD
           </Txt>
-          {expanded === "lord" && (
-            <Txt variant="bodyS" color={color.text.secondary} center style={{ marginTop: space[2] }}>
-              Ride in with finery. Set bounties, run your Court, and rain gold.
+          {expanded === "lord" ? (
+            <Txt
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: color.text.secondary,
+                lineHeight: 18,
+                marginTop: 10,
+                textAlign: "center",
+              }}
+            >
+              Ride in with finery. Set bounties, run your Court, and rain gold on the beggars below. Power never looked
+              so good.
             </Txt>
-          )}
-          <View style={[styles.chip, glass.gold, { marginTop: space[3] }]}>
-            <Txt variant="numericS" color={color.action.primary}>
+          ) : null}
+          <View style={[styles.chip, glass.gold, { marginTop: 10 }]}>
+            <Txt style={{ fontFamily: font.mono, fontSize: 11, color: color.action.primary, fontWeight: "700" }}>
               $100 BUY-IN
             </Txt>
           </View>
-          {expanded === "lord" && (
+          {expanded === "lord" ? (
             <Pressable
               disabled={loading}
               onPress={() => choose("lord")}
-              style={[styles.ctaGold, { marginTop: space[4] }]}
+              style={styles.ctaGold}
               accessibilityRole="button"
             >
               {loading ? (
                 <ActivityIndicator color={color.text.inverse} />
               ) : (
-                <Txt variant="buttonM" color={color.text.inverse}>
+                <Txt style={{ fontFamily: font.headlineBold, fontSize: 14, color: color.text.inverse }}>
                   Claim your title
                 </Txt>
               )}
             </Pressable>
-          )}
+          ) : null}
         </Pressable>
       </View>
 
-      <Txt variant="caption" color={color.text.tertiary} center style={{ paddingVertical: space[5] }}>
+      <Txt
+        style={{
+          fontFamily: font.body,
+          fontSize: 12,
+          color: color.text.tertiary,
+          lineHeight: 19,
+          textAlign: "center",
+          paddingHorizontal: space[5],
+          paddingVertical: space[4],
+        }}
+      >
         Drifters can rise. Lords never fall — and never go back.
       </Txt>
-    </Screen>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  row: { flex: 1, flexDirection: "row", gap: 8, minHeight: 0 },
+  root: { flex: 1, backgroundColor: color.bg.canvas },
+  header: { paddingHorizontal: 24, paddingBottom: 18, alignItems: "center" },
+  row: { flex: 1, flexDirection: "row", marginHorizontal: 14, gap: 8, minHeight: 0 },
   panel: {
-    padding: space[4],
+    padding: 16,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "space-between",
+    borderWidth: 2,
+    overflow: "hidden",
+    minWidth: 0,
+  },
+  parchment: {
+    backgroundColor: "rgba(244,238,221,0.95)",
+    borderColor: "rgba(228,218,192,0.8)",
+  },
+  overDust: {
+    fontFamily: font.headlineBlack,
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: color.dust,
+    marginBottom: 6,
+  },
+  overLo: {
+    fontFamily: font.headlineBlack,
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: color.text.tertiary,
+    marginBottom: 6,
   },
   chip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
   ctaDark: {
@@ -201,21 +237,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+    marginTop: 14,
   },
   ctaGold: {
     width: "100%",
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+    marginTop: 14,
     backgroundColor: color.action.primaryHover,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
   },
   rope: { width: 10, alignItems: "center", justifyContent: "center", gap: 3 },
-  ropeKnot: {
-    width: 3,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: color.dust,
-  },
+  ropeKnot: { width: 3, height: 12, borderRadius: 2, backgroundColor: color.dust },
 })

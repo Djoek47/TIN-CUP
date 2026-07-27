@@ -4,11 +4,11 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { Screen } from "@/components/ui/Screen"
 import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
+import { GoldButton } from "@/components/gds/GoldButton"
 import { useAuth } from "@/providers/AuthProvider"
-import { color, space } from "@/theme/tokens"
+import { color, font, space } from "@/theme/tokens"
 
-/** Welcome — Expo Go safe (no Chrome / MetaMask required) */
+/** S03 Welcome — exact Make copy */
 export default function Welcome() {
   const router = useRouter()
   const { connectWallet } = useAuth()
@@ -19,15 +19,15 @@ export default function Welcome() {
     setBusy(true)
     try {
       const next = await connectWallet()
-      // Returning riders who finished onboarding go straight to Main Street
       if (mode === "returning" && next?.onboarded) {
+        router.replace("/(app)")
+      } else if (next?.onboarded) {
         router.replace("/(app)")
       } else {
         router.replace("/(onboarding)/choose-fate")
       }
     } catch (e) {
       console.log("[v0] Enter town failed:", e)
-      // Still advance — never leave the user stuck on welcome
       router.replace("/(onboarding)/choose-fate")
     } finally {
       setBusy(false)
@@ -36,11 +36,7 @@ export default function Welcome() {
 
   return (
     <Screen padded={false} edges={["bottom"]}>
-      <ImageBackground
-        source={require("@/assets/art/townscape.png")}
-        style={styles.bg}
-        resizeMode="cover"
-      >
+      <ImageBackground source={require("@/assets/art/townscape.png")} style={styles.bg} resizeMode="cover">
         <LinearGradient
           colors={["rgba(11,14,20,0.2)", "rgba(11,14,20,0.6)", color.bg.canvas]}
           locations={[0, 0.55, 0.88]}
@@ -53,30 +49,59 @@ export default function Welcome() {
               resizeMode="contain"
               accessibilityLabel="Tin Cup eagle dollar coin logo"
             />
-            <Txt variant="displayXL" color={color.action.primary} center style={styles.word}>
+            <Txt
+              style={{
+                fontFamily: font.display,
+                fontSize: 42,
+                color: color.action.primary,
+                letterSpacing: 2.5,
+                textShadowColor: "rgba(245,179,43,0.33)",
+                textShadowRadius: 40,
+                textShadowOffset: { width: 0, height: 0 },
+              }}
+            >
               TIN CUP
             </Txt>
-            <Txt variant="overline" color={color.text.tertiary} style={styles.est}>
+            <Txt
+              style={{
+                fontFamily: font.headlineBlack,
+                fontSize: 10,
+                letterSpacing: 4,
+                textTransform: "uppercase",
+                color: color.text.tertiary,
+                marginTop: 10,
+              }}
+            >
               Perdition Gulch · Est. Now
             </Txt>
           </View>
 
           <View style={styles.mid}>
-            <Txt variant="bodyM" color={color.text.secondary} center style={styles.tagline}>
+            <Txt
+              style={{
+                fontFamily: font.body,
+                fontSize: 15,
+                color: color.text.secondary,
+                lineHeight: 24,
+                textAlign: "center",
+                maxWidth: 280,
+              }}
+            >
               Where strangers throw real gold at strangers — for glory, for laughs, for the story.
             </Txt>
           </View>
 
           <View style={styles.bottom}>
-            <Button
-              title="Walk into town"
-              onPress={() => enter("new")}
-              loading={busy}
-              disabled={busy}
-              size="lg"
-            />
-            <Txt variant="caption" color={color.text.tertiary} center>
-              Opens a local test seat on your phone. No Chrome or MetaMask.
+            <GoldButton title="Walk into town" onPress={() => enter("new")} loading={busy} disabled={busy} />
+            <Txt
+              style={{
+                fontFamily: font.body,
+                fontSize: 12,
+                color: color.text.tertiary,
+                textAlign: "center",
+              }}
+            >
+              Look around free. No account till you touch money.
             </Txt>
             <Pressable
               onPress={() => enter("returning")}
@@ -87,7 +112,14 @@ export default function Welcome() {
               {busy ? (
                 <ActivityIndicator color={color.text.secondary} />
               ) : (
-                <Txt variant="buttonM" color={color.text.secondary} center>
+                <Txt
+                  style={{
+                    fontFamily: font.headlineSemi,
+                    fontSize: 15,
+                    color: color.text.secondary,
+                    textAlign: "center",
+                  }}
+                >
                   I&apos;ve been here before
                 </Txt>
               )}
@@ -103,16 +135,8 @@ const styles = StyleSheet.create({
   bg: { flex: 1 },
   scrim: { flex: 1, justifyContent: "space-between", paddingHorizontal: space[5] },
   top: { alignItems: "center", marginTop: space[9] + 8 },
-  logo: { width: 88, height: 88, marginBottom: space[3] },
-  word: {
-    letterSpacing: 2,
-    textShadowColor: "rgba(245,179,43,0.35)",
-    textShadowRadius: 24,
-    textShadowOffset: { width: 0, height: 0 },
-  },
-  est: { marginTop: space[2], letterSpacing: 3 },
+  logo: { width: 72, height: 72, marginBottom: space[2] },
   mid: { alignItems: "center", paddingHorizontal: space[3] },
-  tagline: { maxWidth: 280, lineHeight: 24 },
   bottom: { gap: space[3], paddingBottom: space[5] },
-  signIn: { paddingVertical: space[3], minHeight: 44, justifyContent: "center" },
+  signIn: { paddingVertical: space[3], minHeight: 48, justifyContent: "center" },
 })

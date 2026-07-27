@@ -1,86 +1,92 @@
-import { ethers } from "ethers"
+/**
+ * thirdweb money + identity helpers (Expo Go safe).
+ *
+ * Expo Go cannot bundle thirdweb's native in-app wallet stack
+ * (`thirdweb/wallets` → AWS KMS / react-native-quick-crypto / Coinbase MWP).
+ * This module never imports `thirdweb` or `thirdweb/wallets` so Metro can
+ * serve Expo Go. Identity is a local demo seat; money mutations that lack a
+ * real signer throw Stage 2 copy: "No gold moved."
+ *
+ * Custom/dev clients can replace sendUsdt / connectInAppGuest with real
+ * thirdweb Account wiring without changing AuthProvider call sites.
+ */
+import * as Crypto from "expo-crypto";
 
-// Polygon Mumbai testnet
-export const CHAIN_ID = 80001
-export const CHAIN_NAME = "Polygon Mumbai"
-export const RPC_URL = "https://rpc-mumbai.maticvigil.com"
+export const MONEY_FAIL_COPY = "No gold moved.";
 
-// USDT on Polygon Mumbai (testnet)
-// This is a test USDT token - replace with actual USDT address for production
-export const USDT_ADDRESS = "0x2E8D98fd126a32365dB66C12C9B80Fc51fCE2D58"
-export const USDT_DECIMALS = 6
+const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ?? "";
+const usdtAddress = (process.env.EXPO_PUBLIC_USDT_ADDRESS ??
+  "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582") as `0x${string}`;
+const projectWallet = (process.env.EXPO_PUBLIC_PROJECT_WALLET ??
+  "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
-// Project wallet receiving Lord membership fees
-export const PROJECT_WALLET = "0x742d35Cc6634C0532925a3b844Bc7e7595f0bEb"
+export const isThirdwebConfigured = Boolean(
+  clientId && clientId !== "your_client_id_here" && !clientId.includes("YOUR_"),
+);
 
-// Placeholder USDT contract ABI (minimal for transfers)
-export const USDT_ABI = [
-  {
-    constant: false,
-    inputs: [
-      { name: "_to", type: "address" },
-      { name: "_value", type: "uint256" },
-    ],
-    name: "transfer",
-    outputs: [{ name: "", type: "bool" }],
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "_owner", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "balance", type: "uint256" }],
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "decimals",
-    outputs: [{ name: "", type: "uint8" }],
-    type: "function",
-  },
-]
+/** Alias kept for older imports. */
+export const thirdwebConfigured = isThirdwebConfigured;
 
-// Convert USD cents to USDT wei (USDT has 6 decimals)
-export function centsToUsdt(cents: number): string {
-  // cents = USD * 100, USDT wei = USD * 1,000,000
-  // So wei = cents * 10,000
-  return (cents * 10000).toString()
+/**
+ * Wallet seat used by AuthProvider. In Expo Go this is address-only
+ * (no native signer). Custom/dev clients may attach a real signer.
+ */
+export type WalletAccount = {
+  address: `0x${string}`;
+  /** Present only when a custom build injects a thirdweb Account. */
+  signer?: {
+    sendTransaction: (tx: unknown) => Promise<{ transactionHash: `0x${string}` }>;
+  };
+};
+
+export type ConnectedWallet = WalletAccount & {
+  mode: "demo" | "thirdweb";
+};
+
+async function createDemoAddress(): Promise<`0x${string}`> {
+  const bytes = await Crypto.getRandomBytesAsync(20);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `0x${hex}` as `0x${string}`;
 }
 
-// Convert USDT wei to cents
-export function usdtToCents(wei: string | number): number {
-  return Math.floor(Number(wei) / 10000)
+/** Local seat for Expo Go / missing native wallet. */
+export async function connectDemoWallet(): Promise<ConnectedWallet> {
+  const address = await createDemoAddress();
+  return { address, mode: "demo" };
 }
 
-// Format USDT balance for display
-export function formatUsdt(wei: string | number): string {
-  const cents = usdtToCents(wei)
-  return `$${(cents / 100).toFixed(2)}`
+/**
+ * Connect identity. Expo Go always returns a demo seat — never imports
+ * native thirdweb wallets (that path breaks Metro in Expo Go).
+ */
+export async function connectInAppGuest(): Promise<WalletAccount> {
+  return connectDemoWallet();
 }
 
-// Get provider for read-only calls
-export function getProvider() {
-  return new ethers.providers.JsonRpcProvider(RPC_URL)
-}
-
-// Check USDT balance
-export async function checkUsdtBalance(address: string): Promise<number> {
-  const provider = getProvider()
-  const contract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, provider)
-  const balance = await contract.balanceOf(address)
-  return usdtToCents(balance.toString())
-}
-
-// Send USDT (requires signer)
+/**
+ * Send USDT on-chain. Expo Go has no signer → always "No gold moved."
+ * Wire a real thirdweb Account.signer in a custom build to enable sends.
+ */
 export async function sendUsdt(
-  signer: ethers.Signer,
-  recipient: string,
-  cents: number
+  account: WalletAccount,
+  _to: string,
+  _cents: number,
 ): Promise<string> {
-  const contract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, signer)
-  const wei = centsToUsdt(cents)
-  const tx = await contract.transfer(recipient, wei)
-  const receipt = await tx.wait()
-  return receipt.transactionHash
+  if (!account?.signer || !isThirdwebConfigured) {
+    throw new Error(MONEY_FAIL_COPY);
+  }
+  // Custom builds: replace this body with thirdweb prepareContractCall + sendTransaction.
+  throw new Error(MONEY_FAIL_COPY);
 }
+
+/** Lord buy-in: $100 USDT (10000 cents) to project wallet. */
+export async function stakeLordBuyIn(account: WalletAccount): Promise<string> {
+  return sendUsdt(account, projectWallet, 10000);
+}
+
+export { projectWallet, usdtAddress };
+
+/** Legacy alias used by gift screen. */
+export const USDT_ADDRESS = usdtAddress;

@@ -1,9 +1,9 @@
 import { View, Pressable, StyleSheet, Platform } from "react-native"
-import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
+import { BlurView } from "expo-blur"
+import { Ico } from "@/components/gds/icons"
 import { color, space } from "@/theme/tokens"
-import { glass } from "@/theme/glass"
 import { useAuth } from "@/providers/AuthProvider"
 
 type TabRoute = { key: string; name: string }
@@ -13,103 +13,83 @@ type GulchTabBarProps = {
   navigation: { navigate: (name: string) => void }
 }
 
-const TAB_META: Record<
-  string,
-  { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
-> = {
-  index: { label: "Main St", icon: "star-circle" },
-  search: { label: "Feed", icon: "movie-open" },
-  leaderboard: { label: "Lobby", icon: "door-open" },
-  profile: { label: "Poster", icon: "card-account-details-outline" },
-}
+/** Make NavBar: Main St · Feed · Lobbies · Poster + caste ActionOrb */
+const VISIBLE = ["index", "feed", "lobbies", "profile"] as const
 
-const VISIBLE = ["index", "search", "leaderboard", "profile"] as const
-
-/** Floating glass pill nav from Figma Make Tin-Cup-V2 */
 export function GulchTabBar({ state, navigation }: GulchTabBarProps) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { profile } = useAuth()
   const isLord = Boolean(profile?.is_lord)
 
-  const routes = state.routes.filter((r) =>
-    (VISIBLE as readonly string[]).includes(r.name),
-  )
+  const routes = state.routes.filter((r) => (VISIBLE as readonly string[]).includes(r.name))
+
+  const iconFor = (name: string, active: boolean) => {
+    const c = active ? color.action.primary : color.text.tertiary
+    if (name === "index") return <Ico.Sheriff c={c} />
+    if (name === "feed") return <Ico.Lasso c={c} />
+    if (name === "lobbies") return <Ico.Saloon c={c} />
+    return <Ico.Poster c={c} />
+  }
 
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
-      <View style={[styles.pill, glass.nav]}>
-        {routes.slice(0, 2).map((route) => {
-          const focused = state.index === state.routes.findIndex((r) => r.key === route.key)
-          const meta = TAB_META[route.name] ?? { label: route.name, icon: "circle" as const }
-          return (
-            <Pressable
-              key={route.key}
-              onPress={() => navigation.navigate(route.name)}
-              style={styles.tab}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-            >
-              <MaterialCommunityIcons
-                name={meta.icon}
-                size={22}
-                color={focused ? color.action.primary : color.text.tertiary}
-              />
-              {focused ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
-            </Pressable>
-          )
-        })}
+      <View style={styles.pill}>
+        <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <View style={styles.pillInner}>
+          {routes.slice(0, 2).map((route) => {
+            const focused = state.index === state.routes.findIndex((r) => r.key === route.key)
+            return (
+              <Pressable
+                key={route.key}
+                onPress={() => navigation.navigate(route.name)}
+                style={styles.tab}
+                accessibilityRole="button"
+                accessibilityState={focused ? { selected: true } : {}}
+              >
+                {iconFor(route.name, focused)}
+                {focused ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
+              </Pressable>
+            )
+          })}
 
-        <Pressable
-          onPress={() => router.push("/(app)/compose")}
-          style={styles.orb}
-          accessibilityLabel="Post"
-        >
-          <MaterialCommunityIcons
-            name={isLord ? "flash" : "cup"}
-            size={26}
-            color={color.text.inverse}
-          />
-        </Pressable>
+          <Pressable
+            onPress={() => router.push("/(app)/compose")}
+            style={styles.orb}
+            accessibilityLabel={isLord ? "Post challenge" : "Post beg"}
+          >
+            {isLord ? <Ico.Dynamite c={color.text.inverse} /> : <Ico.Cup c={color.text.inverse} />}
+          </Pressable>
 
-        {routes.slice(2).map((route) => {
-          const focused = state.index === state.routes.findIndex((r) => r.key === route.key)
-          const meta = TAB_META[route.name] ?? { label: route.name, icon: "circle" as const }
-          return (
-            <Pressable
-              key={route.key}
-              onPress={() => navigation.navigate(route.name)}
-              style={styles.tab}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-            >
-              <MaterialCommunityIcons
-                name={meta.icon}
-                size={22}
-                color={focused ? color.action.primary : color.text.tertiary}
-              />
-              {focused ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
-            </Pressable>
-          )
-        })}
+          {routes.slice(2).map((route) => {
+            const focused = state.index === state.routes.findIndex((r) => r.key === route.key)
+            return (
+              <Pressable
+                key={route.key}
+                onPress={() => navigation.navigate(route.name)}
+                style={styles.tab}
+                accessibilityRole="button"
+                accessibilityState={focused ? { selected: true } : {}}
+              >
+                {iconFor(route.name, focused)}
+                {focused ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
+              </Pressable>
+            )
+          })}
+        </View>
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 0,
-  },
+  wrap: { position: "absolute", left: 12, right: 12, bottom: 0 },
   pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: space[4],
-    paddingVertical: 10,
+    borderRadius: 999,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.13)",
+    backgroundColor: "rgba(9,12,18,0.88)",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -121,18 +101,15 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  tab: {
-    minWidth: 48,
+  pillInner: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    paddingVertical: 4,
+    justifyContent: "space-between",
+    paddingHorizontal: space[4],
+    paddingVertical: 10,
   },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: color.action.primary,
-  },
+  tab: { minWidth: 48, alignItems: "center", gap: 3, paddingVertical: 4 },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: color.action.primary },
   dotSpacer: { width: 4, height: 4 },
   orb: {
     width: 56,

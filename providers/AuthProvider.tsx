@@ -1,30 +1,46 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react"
-import { Platform } from "react-native"
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Crypto from "expo-crypto"
 import { supabase } from "@/lib/supabase"
 import { Profile } from "@/lib/types"
+import {
+  connectInAppGuest,
+  isThirdwebConfigured,
+  MONEY_FAIL_COPY,
+  sendUsdt,
+  stakeLordBuyIn,
+  type WalletAccount,
+} from "@/lib/thirdweb"
 
 const WALLET_KEY = "tincup_wallet_address"
 const DEMO_ADDR_KEY = "tincup_demo_address"
 
 interface AuthState {
   wallet: string | null
-  provider: unknown
-  signer: unknown
+  account: WalletAccount | null
   profile: Profile | null
   loading: boolean
   configured: boolean
   session: boolean
+  thirdwebReady: boolean
   connectWallet: () => Promise<Profile | null>
   disconnectWallet: () => Promise<void>
   refreshProfile: () => Promise<void>
   updateProfile: (patch: Partial<Profile>) => Promise<void>
+  giftUsdt: (recipient: string, cents: number) => Promise<string>
+  ascendLord: () => Promise<string>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-/** Expo Go–safe random 0x address — uses expo-crypto, never ethers. */
 async function createDemoAddress(): Promise<string> {
   const bytes = await Crypto.getRandomBytesAsync(20)
   const hex = Array.from(bytes)
@@ -37,13 +53,13 @@ function localProfile(address: string): Profile {
   return {
     id: address,
     handle: `outlaw_${address.slice(2, 10)}`,
-    display_name: address.slice(0, 6),
+    display_name: "Dusty Pete",
     fate: "drifter",
     hat: "stetson",
     face: "🤠",
     accent: "gold",
-    coins: 0,
-    balance_cents: 0,
+    coins: 1240,
+    balance_cents: 124000,
     is_lord: false,
     onboarded: false,
     created_at: new Date().toISOString(),
@@ -52,16 +68,33 @@ function localProfile(address: string): Profile {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [wallet, setWalletState] = useState<string | null>(null)
-  const [provider, setProvider] = useState<unknown>(null)
-  const [signer, setSigner] = useState<unknown>(null)
+  const [account, setAccount] = useState<WalletAccount | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [configured, setConfigured] = useState(false)
   const walletRef = useRef<string | null>(null)
+  const accountRef = useRef<WalletAccount | null>(null)
 
   const setWallet = useCallback((address: string | null) => {
     walletRef.current = address
     setWalletState(address)
+  }, [])
+
+  const loadProfile = useCallback(async (walletAddress: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", walletAddress.toLowerCase())
+        .maybeSingle()
+
+      if (data) setProfile(data as Profile)
+      else setProfile(localProfile(walletAddress))
+      if (error) console.log("[v0] profile fetch:", error.message)
+    } catch (e) {
+      console.log("[v0] Load profile error:", e)
+      setProfile(localProfile(walletAddress))
+    }
   }, [])
 
   useEffect(() => {
@@ -79,30 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       }
     }
-
     init()
-  }, [setWallet])
-
-  const loadProfile = useCallback(async (walletAddress: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", walletAddress.toLowerCase())
-        .maybeSingle()
-
-      if (data) {
-        setProfile(data as Profile)
-      } else if (error) {
-        setProfile(localProfile(walletAddress))
-      } else {
-        setProfile(null)
-      }
-    } catch (e) {
-      console.log("[v0] Load profile error:", e)
-      setProfile(localProfile(walletAddress))
-    }
-  }, [])
+  }, [setWallet, loadProfile])
 
   const ensureProfile = useCallback(async (address: string): Promise<Profile> => {
     try {
@@ -129,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hat: "stetson",
           face: "🤠",
           accent: "gold",
-          coins: 0,
-          balance_cents: 0,
+          coins: stub.coins,
+          balance_cents: stub.balance_cents,
           is_lord: false,
           onboarded: false,
         })
@@ -143,69 +154,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return p
       }
 
-      console.log("[v0] Profile insert skipped, using local stub:", error?.message)
       setProfile(stub)
       return stub
-    } catch (e) {
-      console.log("[v0] ensureProfile error:", e)
+    } catch {
       const stub = localProfile(address)
       setProfile(stub)
       return stub
     }
   }, [])
 
-  const connectDemoWallet = useCallback(async (): Promise<Profile> => {
+  const connectWallet = useCallback(async (): Promise<Profile | null> => {
+    if (isThirdwebConfigured) {
+      try {
+        const acc = await connectInAppGuest()
+        const address = acc.address.toLowerCase()
+        accountRef.current = acc
+        setAccount(acc)
+        setWallet(address)
+        await AsyncStorage.setItem(WALLET_KEY, address)
+        return ensureProfile(address)
+      } catch (e) {
+        console.log("[v0] Thirdweb connect failed, demo fallback:", e)
+      }
+    }
+
     let address = await AsyncStorage.getItem(DEMO_ADDR_KEY)
     if (!address) {
       address = await createDemoAddress()
       await AsyncStorage.setItem(DEMO_ADDR_KEY, address)
     }
     address = address.toLowerCase()
-
+    accountRef.current = null
+    setAccount(null)
     setWallet(address)
-    setSigner(null)
-    setProvider(null)
     await AsyncStorage.setItem(WALLET_KEY, address)
     return ensureProfile(address)
-  }, [ensureProfile])
-
-  const connectWallet = useCallback(async (): Promise<Profile | null> => {
-    // Mobile (Expo Go): always local demo seat — no Chrome / MetaMask / ethers random
-    if (Platform.OS !== "web") {
-      return connectDemoWallet()
-    }
-
-    try {
-      const ethereum = typeof window !== "undefined" ? (window as any).ethereum : null
-      if (ethereum) {
-        try {
-          const { ethers } = await import("ethers")
-          const accounts = await ethereum.request({ method: "eth_requestAccounts" })
-          const address = accounts[0].toLowerCase()
-          const web3Provider = new ethers.providers.Web3Provider(ethereum)
-          setWallet(address)
-          setSigner(web3Provider.getSigner())
-          setProvider(web3Provider)
-          await AsyncStorage.setItem(WALLET_KEY, address)
-          return ensureProfile(address)
-        } catch (e) {
-          console.log("[v0] MetaMask failed, falling back to demo wallet:", e)
-        }
-      }
-      return await connectDemoWallet()
-    } catch (e) {
-      console.log("[v0] Wallet connect error:", e)
-      return await connectDemoWallet()
-    }
-  }, [connectDemoWallet, ensureProfile])
+  }, [ensureProfile, setWallet])
 
   const disconnectWallet = useCallback(async () => {
     setWallet(null)
-    setSigner(null)
-    setProvider(null)
+    setAccount(null)
+    accountRef.current = null
     setProfile(null)
     await AsyncStorage.removeItem(WALLET_KEY)
-  }, [])
+  }, [setWallet])
 
   const updateProfile = useCallback(async (patch: Partial<Profile>) => {
     const address = walletRef.current
@@ -223,7 +215,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("id", address)
         .select()
         .single()
-
       if (!error && data) setProfile(data as Profile)
     } catch (e) {
       console.log("[v0] updateProfile sync error (kept local):", e)
@@ -235,20 +226,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (address) await loadProfile(address)
   }, [loadProfile])
 
+  const giftUsdt = useCallback(
+    async (recipient: string, cents: number) => {
+      const acc = accountRef.current
+      if (!acc || !isThirdwebConfigured) {
+        const bal = profile?.balance_cents ?? 0
+        if (bal < cents) throw new Error(MONEY_FAIL_COPY)
+        await updateProfile({
+          balance_cents: bal - cents,
+          coins: (profile?.coins ?? 0) + Math.floor(cents / 100),
+        })
+        return `demo-gift-${Date.now()}`
+      }
+      try {
+        return await sendUsdt(acc, recipient, cents)
+      } catch (e) {
+        console.log("[v0] giftUsdt failed:", e)
+        throw new Error(MONEY_FAIL_COPY)
+      }
+    },
+    [profile, updateProfile],
+  )
+
+  const ascendLord = useCallback(async () => {
+    const acc = accountRef.current
+    if (!acc || !isThirdwebConfigured) {
+      await updateProfile({ is_lord: true, fate: "lord" })
+      return `demo-lord-${Date.now()}`
+    }
+    try {
+      const hash = await stakeLordBuyIn(acc)
+      await updateProfile({ is_lord: true, fate: "lord" })
+      return hash
+    } catch (e) {
+      console.log("[v0] ascendLord failed:", e)
+      throw new Error(MONEY_FAIL_COPY)
+    }
+  }, [updateProfile])
+
   return (
     <AuthContext.Provider
       value={{
         wallet,
-        provider,
-        signer,
+        account,
         profile,
         loading,
         configured,
         session: !!wallet,
+        thirdwebReady: isThirdwebConfigured,
         connectWallet,
         disconnectWallet,
         refreshProfile,
         updateProfile,
+        giftUsdt,
+        ascendLord,
       }}
     >
       {children}
@@ -261,3 +292,5 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider")
   return ctx
 }
+
+export { MONEY_FAIL_COPY }

@@ -42,10 +42,6 @@ export const primitive = {
   dust: {
     500: "#8C7A5B", // coin-dust currency accent
   },
-  parchment: {
-    100: "#F4EEDD",
-    300: "#E4DAC0",
-  },
   sky: {
     500: "#4E7DA6", // links / informational
   },

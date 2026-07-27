@@ -2,6 +2,7 @@ import { View, Pressable, StyleSheet } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { BlurView } from "expo-blur"
 import { Txt } from "@/components/ui/Txt"
+import { BalancePill } from "./BalancePill"
 import { Ico } from "./icons"
 import { glass } from "@/theme/glass"
 import { color, font } from "@/theme/tokens"
@@ -61,14 +62,7 @@ export function TopAppBar({
           </View>
         </View>
         <View style={styles.right}>
-          {balance !== undefined ? (
-            <Pressable onPress={onWallet} style={[styles.pill, glass.gold]} accessibilityRole="button">
-              <Txt style={{ fontSize: 13 }}>🪙</Txt>
-              <Txt style={{ fontFamily: font.mono, fontSize: 13, color: color.action.primary }}>
-                {balance.toLocaleString()}
-              </Txt>
-            </Pressable>
-          ) : null}
+          {balance !== undefined ? <BalancePill balance={balance} onPress={onWallet} /> : null}
           {onBell ? (
             <Pressable onPress={onBell} style={[styles.iconBtn, glass.card]} accessibilityRole="button">
               <Ico.Bell c={color.text.secondary} s={18} />

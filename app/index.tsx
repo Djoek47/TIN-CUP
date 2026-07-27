@@ -11,11 +11,11 @@ import Animated, {
 } from "react-native-reanimated"
 import { Txt } from "@/components/ui/Txt"
 import { useAuth } from "@/providers/AuthProvider"
-import { color, space } from "@/theme/tokens"
+import { color, font, space } from "@/theme/tokens"
 
 const AnimatedImage = Animated.createAnimatedComponent(Image)
 
-/** Splash — eagle dollar coin drop → route */
+/** S01 Splash — Make: coin drop → welcome / app */
 export default function Splash() {
   const router = useRouter()
   const { loading, session, profile, configured } = useAuth()
@@ -54,20 +54,47 @@ export default function Splash() {
   }))
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityLabel="Tin Cup, loading">
       <AnimatedImage
         source={require("@/assets/art/eagle-coin.png")}
         style={[styles.coin, coinStyle]}
         resizeMode="contain"
-        accessibilityLabel="Tin Cup eagle dollar coin"
       />
-      <Txt variant="displayXL" color={color.action.primary} style={styles.word}>
+      <Txt
+        style={{
+          fontFamily: font.display,
+          fontSize: 50,
+          color: color.action.primary,
+          letterSpacing: 2.5,
+          lineHeight: 54,
+          textShadowColor: "rgba(245,179,43,0.4)",
+          textShadowRadius: 50,
+          textShadowOffset: { width: 0, height: 0 },
+        }}
+      >
         TIN CUP
       </Txt>
-      <Txt variant="overline" color={color.text.tertiary} style={styles.sub}>
+      <Txt
+        style={{
+          fontFamily: font.headlineBlack,
+          fontSize: 10,
+          letterSpacing: 4.8,
+          color: color.text.tertiary,
+          textTransform: "uppercase",
+          marginTop: 10,
+        }}
+      >
         Perdition Gulch
       </Txt>
-      <Txt variant="caption" color={color.text.tertiary} style={styles.ver}>
+      <Txt
+        style={{
+          position: "absolute",
+          bottom: 36,
+          fontFamily: font.body,
+          fontSize: 11,
+          color: color.text.tertiary,
+        }}
+      >
         v1.0 · Season 1: Gold Rush
       </Txt>
     </View>
@@ -81,17 +108,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  coin: {
-    width: 120,
-    height: 120,
-    marginBottom: space[5],
-  },
-  word: {
-    letterSpacing: 2,
-    textShadowColor: "rgba(245,179,43,0.4)",
-    textShadowRadius: 40,
-    textShadowOffset: { width: 0, height: 0 },
-  },
-  sub: { marginTop: space[3], letterSpacing: 4 },
-  ver: { position: "absolute", bottom: 36 },
+  coin: { width: 72, height: 72, marginBottom: space[5] + 4 },
 })
