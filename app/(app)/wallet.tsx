@@ -1,222 +1,230 @@
-import { useEffect, useState } from "react"
-import { View, ScrollView } from "react-native"
-import { Screen } from "@/components/ui/Screen"
+import { View, ScrollView, Pressable, StyleSheet, Alert } from "react-native"
+import { useRouter } from "expo-router"
+import { TopAppBar, CoinAmount, Ico } from "@/components/gds"
 import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
-import { Card } from "@/components/ui/Card"
-import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { color, space } from "@/theme/tokens"
-import { LedgerEntry } from "@/lib/types"
-import { formatCents } from "@/lib/format"
+import { LEDGER } from "@/lib/make-data"
+import { glass } from "@/theme/glass"
+import { color, font } from "@/theme/tokens"
 
+const cactusGlass = {
+  backgroundColor: "rgba(63,155,91,0.15)",
+  borderWidth: 1,
+  borderColor: "rgba(63,155,91,0.28)",
+  borderTopColor: "rgba(63,155,91,0.38)",
+} as const
+
+/** S19 Wallet — Make WalletScreen */
 export default function WalletScreen() {
-  const { profile, refreshProfile, updateProfile } = useAuth()
-  const [ledger, setLedger] = useState<LedgerEntry[]>([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    const loadLedger = async () => {
-      if (!profile?.id) return
-      const { data } = await supabase
-        .from("ledger_entries")
-        .select("*")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(20)
-
-      if (data) setLedger(data)
-    }
-
-    loadLedger()
-  }, [profile?.id])
-
-  const loadLedger = async () => {
-    if (!profile?.id) return
-    const { data } = await supabase
-      .from("ledger_entries")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(20)
-
-    if (data) setLedger(data)
-  }
-
-  const handleDeposit = async () => {
-    setLoading(true)
-    try {
-      console.log("[v0] Deposit: Adding $10 test funds")
-      const { data, error } = await supabase.rpc("deposit_funds", {
-        p_amount_cents: 1000, // $10
-      })
-
-      if (error) {
-        console.log("[v0] Deposit RPC unavailable, applying local gold:", error.message)
-        await updateProfile({
-          balance_cents: (profile?.balance_cents ?? 0) + 1000,
-        })
-      } else {
-        console.log("[v0] Deposit success:", data)
-        await refreshProfile()
-      }
-      await loadLedger()
-    } catch (e: any) {
-      console.log("[v0] Deposit failed, local fallback:", e)
-      try {
-        await updateProfile({
-          balance_cents: (profile?.balance_cents ?? 0) + 1000,
-        })
-      } catch {
-        alert(e.message || "Deposit failed")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCashout = async () => {
-    if (!profile?.balance_cents || profile.balance_cents === 0) {
-      alert("No balance to cash out")
-      return
-    }
-
-    setLoading(true)
-    try {
-      console.log("[v0] Cashout: Withdrawing", profile.balance_cents)
-      const { data, error } = await supabase.rpc("cashout_funds", {
-        p_amount_cents: profile.balance_cents,
-      })
-
-      if (error) {
-        console.log("[v0] Cashout RPC unavailable, clearing local stash:", error.message)
-        await updateProfile({ balance_cents: 0 })
-      } else {
-        console.log("[v0] Cashout success:", data)
-        await refreshProfile()
-      }
-      await loadLedger()
-    } catch (e: any) {
-      console.log("[v0] Cashout failed, local fallback:", e)
-      try {
-        await updateProfile({ balance_cents: 0 })
-      } catch {
-        alert(e.message || "Cashout failed")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatKind = (kind: string) => {
-    const map: Record<string, string> = {
-      deposit: "💰 Loaded",
-      cashout: "💸 Cashed Out",
-      gift_sent: "🎁 Gifted",
-      gift_received: "🎉 Received",
-      bonus: "⭐ Bonus",
-    }
-    return map[kind] ?? kind
-  }
+  const router = useRouter()
 
   return (
-    <Screen padded scroll>
-      <Txt variant="displayL" style={{ marginBottom: space[6] }}>
-        YOUR STASH
-      </Txt>
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <TopAppBar title="Wallet" overline="YOUR GOLD" onBack={() => router.back()} />
 
-      {/* Balance Card */}
-      <Card
-        style={{
-          backgroundColor: color.action.primary,
-          paddingVertical: space[8],
-          paddingHorizontal: space[6],
-          marginBottom: space[6],
-          alignItems: "center",
-        }}
-      >
-        <Txt variant="bodyS" color={color.text.inverse} style={{ opacity: 0.8 }}>
-          BALANCE
-        </Txt>
-        <Txt
-          variant="displayXL"
-          color={color.text.inverse}
-          style={{ marginTop: space[2], marginBottom: space[4] }}
-        >
-          {formatCents(profile?.balance_cents ?? 0)}
-        </Txt>
-        <Txt variant="bodyS" color={color.text.inverse} style={{ opacity: 0.7 }}>
-          {profile?.coins ?? 0} coins earned
-        </Txt>
-      </Card>
+        <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
+          <View style={[styles.balanceCard, glass.gold]}>
+            <Txt style={styles.balanceLabel}>YOUR GOLD</Txt>
+            <CoinAmount value={1240} size="XL" usd="1,240.00" />
+            <View style={styles.btnRow}>
+              <Pressable
+                onPress={() => router.push("/(app)/deposit")}
+                style={styles.addGold}
+              >
+                <Txt style={styles.addGoldTxt}>Add Gold</Txt>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/(app)/cash-out")}
+                style={[styles.cashOut, cactusGlass]}
+              >
+                <Ico.Cactus s={14} c={color.money.positive} />
+                <Txt style={styles.cashOutTxt}>Cash Out</Txt>
+              </Pressable>
+            </View>
+          </View>
+        </View>
 
-      {/* Actions */}
-      <View style={{ gap: space[3], marginBottom: space[8] }}>
-        <Button
-          title="Add Gold"
-          onPress={handleDeposit}
-          loading={loading}
-          size="lg"
-          variant="primary"
-        />
-        <Button
-          title="Cash Out"
-          onPress={handleCashout}
-          loading={loading}
-          size="lg"
-          variant="secondary"
-          disabled={!profile?.balance_cents}
-        />
-      </View>
+        <View style={[styles.infoRow, glass.card]}>
+          <Ico.Sheriff s={18} c={color.text.tertiary} />
+          <View style={{ flex: 1 }}>
+            <Txt style={styles.infoTitle}>No holds right now</Txt>
+            <Txt style={styles.infoSub}>{"The Sheriff's watching but you're clear."}</Txt>
+          </View>
+        </View>
 
-      {/* Fee Info */}
-      <Card
-        style={{
-          backgroundColor: color.surface.raised,
-          paddingVertical: space[4],
-          paddingHorizontal: space[4],
-          marginBottom: space[6],
-        }}
-      >
-        <Txt variant="bodyS" style={{ marginBottom: space[2] }}>
-          💰 Monarch&apos;s Cut
-        </Txt>
-        <Txt variant="bodyS" color={color.text.secondary}>
-          5% of all gifts flow to the house. Worth the risk, outlaw.
-        </Txt>
-      </Card>
+        <View style={[styles.cutRow, glass.card]}>
+          <Txt style={{ fontSize: 20 }}>🦅</Txt>
+          <View style={{ flex: 1 }}>
+            <Txt style={[styles.infoTitle, { marginBottom: 3 }]}>{"The Monarch's Cut"}</Txt>
+            <Txt style={styles.cutBody}>
+              1% when gold comes in · 10% when Vagrants cash out. He never misses his coin.
+            </Txt>
+          </View>
+        </View>
 
-      {/* Ledger */}
-      {ledger.length > 0 && (
-        <View>
-          <Txt variant="bodyS" color={color.text.secondary} style={{ marginBottom: space[3] }}>
-            RECENT ACTIVITY
-          </Txt>
-          {ledger.map((entry) => (
-            <View
-              key={entry.id}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: space[3],
-                borderBottomWidth: 1,
-                borderBottomColor: color.border.subtle,
-              }}
-            >
-              <View>
-                <Txt variant="bodyM">{formatKind(entry.kind)}</Txt>
-                <Txt variant="bodyS" color={color.text.secondary}>
-                  {entry.description}
-                </Txt>
+        <View style={{ paddingHorizontal: 16 }}>
+          <Txt style={styles.sectionLabel}>RECENT ACTIVITY</Txt>
+          {LEDGER.map((row) => (
+            <View key={row.id} style={styles.ledgerRow}>
+              <View style={styles.ledgerLeft}>
+                <Txt style={{ fontSize: 18 }}>{row.icon}</Txt>
+                <View style={{ flex: 1 }}>
+                  <Txt
+                    style={{
+                      fontFamily: font.body,
+                      fontSize: 13,
+                      color: row.fee ? color.text.tertiary : color.text.primary,
+                      lineHeight: 17,
+                    }}
+                  >
+                    {row.desc}
+                  </Txt>
+                  <Txt style={{ fontFamily: font.body, fontSize: 10, color: color.text.tertiary }}>
+                    {row.time}
+                  </Txt>
+                </View>
               </View>
-              <Txt variant="numericM" color={entry.amount_cents > 0 ? color.action.success : color.action.danger}>
-                {entry.amount_cents > 0 ? "+" : ""}{formatCents(entry.amount_cents)}
+              <Txt
+                style={{
+                  fontFamily: font.mono,
+                  fontSize: 14,
+                  color: row.fee
+                    ? color.text.tertiary
+                    : row.coins.startsWith("+")
+                      ? color.money.positive
+                      : color.text.primary,
+                }}
+              >
+                {row.coins}
               </Txt>
             </View>
           ))}
         </View>
-      )}
-    </Screen>
+
+        <Pressable
+          onPress={() => Alert.alert("Tax Center opens in your browser ↗")}
+          style={[styles.taxRow, glass.card]}
+        >
+          <Txt style={{ fontFamily: font.body, fontSize: 13, color: color.text.primary }}>
+            Tax Center & 1099-K
+          </Txt>
+          <Txt style={{ color: color.action.primary }}>→</Txt>
+        </Pressable>
+      </ScrollView>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.bg.canvas },
+  balanceCard: {
+    borderRadius: 22,
+    padding: 24,
+    overflow: "hidden",
+    shadowColor: color.action.primary,
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  balanceLabel: {
+    fontFamily: font.headlineBlack,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: color.text.tertiary,
+    marginBottom: 12,
+  },
+  btnRow: { flexDirection: "row", gap: 10, marginTop: 20 },
+  addGold: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: color.action.primaryHover,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    borderTopColor: "rgba(255,255,255,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addGoldTxt: {
+    fontFamily: font.headlineBold,
+    fontSize: 14,
+    color: color.text.inverse,
+  },
+  cashOut: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  cashOutTxt: {
+    fontFamily: font.headlineBold,
+    fontSize: 14,
+    color: color.money.positive,
+  },
+  infoRow: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  infoTitle: {
+    fontFamily: font.headlineBold,
+    fontSize: 12,
+    color: color.text.primary,
+  },
+  infoSub: {
+    fontFamily: font.body,
+    fontSize: 11,
+    color: color.text.tertiary,
+  },
+  cutRow: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  cutBody: {
+    fontFamily: font.body,
+    fontSize: 11,
+    color: color.text.secondary,
+    lineHeight: 17,
+  },
+  sectionLabel: {
+    fontFamily: font.headlineBlack,
+    fontSize: 11,
+    color: color.text.secondary,
+    marginBottom: 12,
+    letterSpacing: 1.2,
+  },
+  ledgerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.04)",
+  },
+  ledgerLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, marginRight: 12 },
+  taxRow: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+})

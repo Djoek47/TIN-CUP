@@ -1,188 +1,204 @@
-import { useState, useEffect } from "react"
-import { View, ScrollView, Pressable, Animated, Easing, Alert, FlatList } from "react-native"
+import { useMemo, useState } from "react"
+import { View, ScrollView, Pressable, StyleSheet, Alert } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { BlurView } from "expo-blur"
-import { Screen } from "@/components/ui/Screen"
+import { TopAppBar, TitleChip, GoalBar, GiverStack, Ico } from "@/components/gds"
 import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
-import { Card } from "@/components/ui/Card"
-import { ShareButton } from "@/components/ui/ShareButton"
+import { BEGS } from "@/lib/make-data"
 import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { shareBeg, copyBegLink } from "@/lib/share"
-import { color, space } from "@/theme/tokens"
-import { Beg, Profile } from "@/lib/types"
-import { formatCents } from "@/lib/format"
+import { MONEY_FAIL_COPY } from "@/lib/thirdweb"
+import { glass } from "@/theme/glass"
+import { color, font } from "@/theme/tokens"
 
-export default function BegDetailsModal() {
+const GIFTS = [
+  { label: "Nickel Toss", emoji: "🪙", amt: 5 },
+  { label: "25 coins", emoji: "💰", amt: 25 },
+  { label: "100 coins", emoji: "💥", amt: 100 },
+]
+
+/** S30 Beg Detail — Make BegDetailScreen */
+export default function BegDetailsScreen() {
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { profile } = useAuth()
+  const { giftUsdt } = useAuth()
+  const [reacted, setReacted] = useState(false)
 
-  const [beg, setBeg] = useState<Beg | null>(null)
-  const [author, setAuthor] = useState<Profile | null>(null)
-  const [backers, setBackers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    loadBegDetails()
+  const beg = useMemo(() => {
+    const n = Number(id)
+    return BEGS.find((b) => b.id === n) ?? BEGS[0]
   }, [id])
 
-  const loadBegDetails = async () => {
-    if (!id) return
-    setLoading(true)
+  const handleReact = () => {
+    setReacted((r) => !r)
+    Alert.alert(reacted ? "Reaction removed." : "🤠 Reacted!")
+  }
 
+  const handleShare = () => Alert.alert("Beg link copied to clipboard ↗")
+
+  const handleGift = async (amt: number) => {
     try {
-      // Load beg
-      const { data: begData, error: begErr } = await supabase
-        .from("begs")
-        .select("*")
-        .eq("id", id)
-        .single()
-
-      if (begErr) throw begErr
-      setBeg(begData)
-
-      // Load author
-      if (begData?.author_id) {
-        const { data: authorData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", begData.author_id)
-          .single()
-
-        setAuthor(authorData)
-      }
-
-      // Load backers (gifts)
-      const { data: giftsData } = await supabase
-        .from("gifts")
-        .select("*, sender:profiles(id, display_name, handle, face)")
-        .eq("beg_id", id)
-        .order("created_at", { ascending: false })
-
-      if (giftsData) setBackers(giftsData)
-    } catch (e) {
-      console.log("[v0] Load details error:", e)
-    } finally {
-      setLoading(false)
+      await giftUsdt("0x0000000000000000000000000000000000000001", amt * 100)
+      Alert.alert(`🪙 Tossing ${amt} coins to ${beg.handle}...`)
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || MONEY_FAIL_COPY)
     }
   }
 
-  const handleShare = async () => {
-    if (!beg?.id || !beg?.title) return
-    await shareBeg(beg.title, beg.id)
-  }
-
-  const handleCopyLink = async () => {
-    if (!beg?.id) return
-    await copyBegLink(beg.id)
-  }
-
-  const handleGift = () => {
-    if (!beg?.id) return
-    router.push(`/gift/${beg.id}`)
-  }
-
-  const progressPercent = beg ? (beg.raised_cents / beg.goal_cents) * 100 : 0
-
   return (
-    <Screen scroll edges={["bottom"]} contentStyle={{ paddingHorizontal: space[6] }}>
-      {/* Header */}
-      <View style={{ paddingVertical: space[6], flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Txt variant="displayL">{beg?.title}</Txt>
-        <Pressable onPress={() => router.back()}>
-          <Txt variant="headlineL" color={color.text.secondary}>✕</Txt>
-        </Pressable>
-      </View>
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <TopAppBar title={beg.handle} overline="BEG DETAIL" onBack={() => router.back()} />
 
-      {/* Progress */}
-      {beg && (
-        <Card style={{ marginBottom: space[6], padding: space[4] }}>
-          <View style={{ marginBottom: space[3] }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: space[2] }}>
-              <Txt variant="bodyM">{formatCents(beg.raised_cents)} raised</Txt>
-              <Txt variant="bodyM" color={color.text.secondary}>{formatCents(beg.goal_cents)} goal</Txt>
-            </View>
-            <View
+        <View style={[styles.hero, glass.card]}>
+          <Txt style={{ fontSize: 72 }}>🤠</Txt>
+          <View style={styles.handleRow}>
+            <Txt
               style={{
-                height: 8,
-                backgroundColor: color.surface.raised,
-                borderRadius: 4,
-                overflow: "hidden",
+                fontFamily: font.headlineBold,
+                fontSize: 14,
+                color: color.text.primary,
               }}
             >
-              <View
-                style={{
-                  height: "100%",
-                  width: `${Math.min(progressPercent, 100)}%`,
-                  backgroundColor: color.action.primary,
-                }}
-              />
-            </View>
-            <Txt variant="caption" color={color.text.tertiary} style={{ marginTop: space[2] }}>
-              {Math.round(progressPercent)}% complete • {beg.backers} backer{beg.backers !== 1 ? "s" : ""}
+              {beg.handle}
             </Txt>
+            <TitleChip title={beg.title} />
           </View>
+        </View>
 
-          {/* Author */}
-          {author && (
-            <View style={{ borderTopColor: color.border.subtle, borderTopWidth: 1, paddingTop: space[4], marginTop: space[4] }}>
-              <Txt variant="bodyS" color={color.text.tertiary}>Started by</Txt>
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: space[2] }}>
-                <Txt variant="displayL">{author.face}</Txt>
-                <View style={{ marginLeft: space[3] }}>
-                  <Txt variant="bodyM">{author.display_name}</Txt>
-                  <Txt variant="bodyS" color={color.text.secondary}>@{author.handle}</Txt>
-                </View>
+        <View style={{ paddingHorizontal: 16 }}>
+          <Txt style={styles.pitch}>{beg.beg}</Txt>
+
+          {beg.goal ? (
+            <View style={{ marginBottom: 16 }}>
+              <GoalBar current={beg.coins} goal={beg.goal} />
+              <View style={{ marginTop: 10 }}>
+                <GiverStack count={beg.givers} />
               </View>
+            </View>
+          ) : (
+            <View style={{ marginBottom: 16 }}>
+              <GiverStack count={beg.givers} />
             </View>
           )}
-        </Card>
-      )}
 
-      {/* Story */}
-      {beg?.story && (
-        <Card style={{ marginBottom: space[6], padding: space[4] }}>
-          <Txt variant="bodyS" color={color.text.tertiary} style={{ marginBottom: space[2] }}>THEIR STORY</Txt>
-          <Txt variant="bodyM" style={{ lineHeight: 24 }}>{beg.story}</Txt>
-        </Card>
-      )}
+          <View style={styles.giftRow}>
+            {GIFTS.map((g) => (
+              <Pressable
+                key={g.label}
+                onPress={() => handleGift(g.amt)}
+                style={[
+                  styles.giftBtn,
+                  g.amt === 100 ? glass.gold : glass.card,
+                  g.amt === 100 && { borderColor: "rgba(245,179,43,0.3)" },
+                ]}
+              >
+                <Txt style={{ fontSize: 18 }}>{g.emoji}</Txt>
+                <Txt
+                  style={{
+                    fontFamily: font.mono,
+                    fontSize: 9,
+                    color: g.amt === 100 ? color.action.primary : color.text.secondary,
+                  }}
+                >
+                  {g.label}
+                </Txt>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => router.push("/(app)/wallet")}
+              style={[styles.giftBtn, glass.card]}
+            >
+              <Txt style={{ fontSize: 18 }}>✏️</Txt>
+              <Txt
+                style={{
+                  fontFamily: font.mono,
+                  fontSize: 9,
+                  color: color.text.secondary,
+                }}
+              >
+                Custom
+              </Txt>
+            </Pressable>
+          </View>
 
-      {/* Action Buttons */}
-      <View style={{ gap: space[2], marginBottom: space[6] }}>
-        <Button title="Send Gift" onPress={handleGift} size="lg" />
-        <View style={{ flexDirection: "row", gap: space[2] }}>
-          <ShareButton onPress={handleShare} size="small" label="Share" />
-          <Button title="Copy Link" onPress={handleCopyLink} variant="ghost" size="md" />
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={handleReact}
+              style={[
+                styles.actionBtn,
+                reacted ? glass.gold : glass.card,
+                reacted && { borderColor: "rgba(245,179,43,0.3)" },
+              ]}
+            >
+              <Txt
+                style={{
+                  fontFamily: font.headlineBold,
+                  fontSize: 13,
+                  color: reacted ? color.action.primary : color.text.secondary,
+                }}
+              >
+                {reacted ? "🤠 Reacted" : "React 🤠"}
+              </Txt>
+            </Pressable>
+            <Pressable onPress={handleShare} style={[styles.actionBtn, glass.card]}>
+              <Ico.Share s={14} c={color.text.secondary} />
+              <Txt
+                style={{
+                  fontFamily: font.headlineBold,
+                  fontSize: 13,
+                  color: color.text.secondary,
+                }}
+              >
+                Share
+              </Txt>
+            </Pressable>
+          </View>
         </View>
-      </View>
-
-      {/* Backers */}
-      {backers.length > 0 && (
-        <Card style={{ marginBottom: space[6], padding: space[4] }}>
-          <Txt variant="bodyS" color={color.text.tertiary} style={{ marginBottom: space[4] }}>
-            {backers.length} BACKER{backers.length !== 1 ? "S" : ""}
-          </Txt>
-          <FlatList
-            data={backers}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: space[2], borderBottomColor: color.border.subtle, borderBottomWidth: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Txt variant="headlineM" style={{ marginRight: space[2] }}>{item.sender?.face || "🤠"}</Txt>
-                  <View>
-                    <Txt variant="bodyS">{item.sender?.display_name || "Anonymous"}</Txt>
-                    <Txt variant="caption" color={color.text.tertiary}>{new Date(item.created_at).toLocaleDateString()}</Txt>
-                  </View>
-                </View>
-                <Txt variant="bodyM" color={color.action.primary}>{formatCents(item.amount_cents)}</Txt>
-              </View>
-            )}
-          />
-        </Card>
-      )}
-    </Screen>
+      </ScrollView>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.bg.canvas },
+  hero: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    height: 196,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  handleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  pitch: {
+    fontFamily: font.headlineBlack,
+    fontSize: 20,
+    color: color.text.primary,
+    lineHeight: 26,
+    marginBottom: 14,
+  },
+  giftRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
+  giftBtn: {
+    flex: 1,
+    height: 58,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  actionRow: { flexDirection: "row", gap: 8 },
+  actionBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+})

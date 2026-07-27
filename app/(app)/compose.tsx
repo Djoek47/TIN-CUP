@@ -1,197 +1,383 @@
 import { useState } from "react"
-import { View, ScrollView, Pressable } from "react-native"
+import {
+  View,
+  ScrollView,
+  Pressable,
+  TextInput,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native"
 import { useRouter } from "expo-router"
-import { Screen } from "@/components/ui/Screen"
+import { TopAppBar, BegCard, GoldButton } from "@/components/gds"
 import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
-import { Field } from "@/components/ui/Field"
-import { Card } from "@/components/ui/Card"
-import { CameraButton } from "@/components/ui/CameraButton"
-import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { uploadImageToSupabase } from "@/lib/camera"
-import { color, space } from "@/theme/tokens"
-import { formatCents } from "@/lib/format"
-import * as ImagePicker from "expo-image-picker"
+import { BEGS } from "@/lib/make-data"
+import { glass } from "@/theme/glass"
+import { color, font } from "@/theme/tokens"
 
-export default function ComposeBegsScreen() {
+const STEPS = ["1. Write", "2. Show", "3. Preview"] as const
+
+/** S26 Beg Composer — Make ComposerScreen */
+export default function ComposeScreen() {
   const router = useRouter()
-  const { profile } = useAuth()
+  const [step, setStep] = useState(1)
   const [title, setTitle] = useState("")
   const [story, setStory] = useState("")
-  const [goalCents, setGoalCents] = useState("5000")
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState("")
-  const [imageUri, setImageUri] = useState<string | null>(null)
+  const [hasGoal, setHasGoal] = useState(false)
+  const [goalAmt, setGoalAmt] = useState("500")
 
-  const handleImagePicked = async (uri: string) => {
-    setImageUri(uri)
-  }
-
-  const handlePublish = async () => {
-    if (!title.trim()) {
-      setError("Give your beg a title, outlaw.")
-      return
-    }
-    if (!profile?.id) {
-      setError("Not signed in.")
-      return
-    }
-
-    setLoading(true)
-    setError("")
-
-    try {
-      let imageUrl: string | null = null
-
-      // Upload image if selected
-      if (imageUri) {
-        setUploading(true)
-        const fileName = `${profile.id}-beg-${Date.now()}.jpg`
-        imageUrl = await uploadImageToSupabase(imageUri, "begs", fileName, supabase)
-        setUploading(false)
-      }
-
-      const { error: err } = await supabase.from("begs").insert({
-        author_id: profile.id,
-        title,
-        story,
-        goal_cents: parseInt(goalCents || "0", 10) * 100,
-        raised_cents: 0,
-        backers: 0,
-        status: "open",
-        image_url: imageUrl,
-      })
-
-      if (err) {
-        // Expo Go demo: still return to Main Street so Post never dead-ends
-        console.log("[v0] Publish RPC/insert skipped:", err.message)
-      }
-
-      router.replace("/(app)")
-    } catch (e: any) {
-      console.log("[v0] Publish error:", e)
-      // Keep the CTA useful offline — advance with a soft notice
-      setError(e.message || "Posted locally — Main Street will sync when the saloon is online.")
-      router.replace("/(app)")
-    } finally {
-      setLoading(false)
-      setUploading(false)
-    }
+  const handlePost = () => {
+    Alert.alert(
+      "🪙 Beg posted! The Sheriff's scanning it now.",
+      "Goes live after a quick safety check."
+    )
+    router.back()
   }
 
   return (
-    <Screen scroll padded edges={["top"]}>
-      <View style={{ paddingVertical: space[4], marginBottom: space[6] }}>
-        <Txt variant="displayL">POST A BEG</Txt>
-        <Txt variant="bodyM" color={color.text.secondary} style={{ marginTop: space[2] }}>
-          Tell the gulch what you need. Every coin counts.
-        </Txt>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <TopAppBar title="New Beg" overline="COMPOSER" onBack={() => router.back()} />
+
+      <View style={styles.stepRow}>
+        {STEPS.map((s, i) => (
+          <View key={s} style={{ flex: 1, alignItems: "center" }}>
+            <View
+              style={[
+                styles.stepBar,
+                {
+                  backgroundColor:
+                    step > i + 1 || step === i + 1 ? color.action.primary : "rgba(255,255,255,0.08)",
+                  opacity: step === i + 1 ? 1 : step > i + 1 ? 0.6 : 0.3,
+                },
+              ]}
+            />
+            <Txt
+              style={{
+                fontFamily: font.headlineBold,
+                fontSize: 10,
+                color: step === i + 1 ? color.action.primary : color.text.tertiary,
+              }}
+            >
+              {s}
+            </Txt>
+          </View>
+        ))}
       </View>
 
-      {error && (
-        <Card
-          style={{
-            backgroundColor: color.action.danger,
-            paddingVertical: space[3],
-            paddingHorizontal: space[4],
-            marginBottom: space[4],
-          }}
+      {step === 1 ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+          keyboardShouldPersistTaps="handled"
         >
-          <Txt variant="bodyS" color={color.text.inverse}>
-            {error}
-          </Txt>
-        </Card>
-      )}
-
-      <Field
-        label="TITLE"
-        placeholder="Fund my championship mustache wax regionals"
-        value={title}
-        onChangeText={setTitle}
-        style={{ marginBottom: space[6] }}
-      />
-
-      <Field
-        label="YOUR STORY"
-        placeholder="Been growin this beauty for three winters..."
-        value={story}
-        onChangeText={setStory}
-        multiline
-        numberOfLines={6}
-        style={{ marginBottom: space[6] }}
-      />
-
-      <Field
-        label="GOAL (DOLLARS)"
-        placeholder="50"
-        value={goalCents}
-        onChangeText={setGoalCents}
-        keyboardType="decimal-pad"
-        style={{ marginBottom: space[6] }}
-      />
-
-      {/* Image Picker */}
-      <View style={{ marginBottom: space[6] }}>
-        <Txt variant="bodyS" color={color.text.secondary} style={{ marginBottom: space[3] }}>
-          ADD A PHOTO (OPTIONAL)
-        </Txt>
-        {imageUri ? (
-          <Pressable
-            onPress={() => setImageUri(null)}
-            style={{
-              width: "100%",
-              height: 200,
-              backgroundColor: color.surface.card,
-              borderRadius: 8,
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: space[2],
-            }}
-          >
-            <Txt variant="bodyM" color={color.text.secondary}>
-              📸 Image selected
+          <View style={[styles.guidance, glass.parchment]}>
+            <Txt style={styles.guidanceTitle}>Keep it legal & fun, partner. 🤠</Txt>
+            <Txt style={styles.guidanceBody}>
+              {`✔ "Best outlaw dance for $50"  ✔ "Fund my mustache wax"\n✘ Scams  ✘ Danger  ✘ Genuine emergencies`}
             </Txt>
-            <Txt variant="bodyS" color={color.text.tertiary} style={{ marginTop: space[1] }}>
-              Tap to remove
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <Txt style={styles.label}>Your Pitch ({60 - title.length} left)</Txt>
+            <TextInput
+              value={title}
+              onChangeText={(t) => t.length <= 60 && setTitle(t)}
+              placeholder="Fund my championship mustache wax..."
+              placeholderTextColor={color.text.tertiary}
+              multiline
+              style={[styles.input, glass.card, { height: 76 }]}
+            />
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <Txt style={styles.label}>Your Story ({280 - story.length} left)</Txt>
+            <TextInput
+              value={story}
+              onChangeText={(t) => t.length <= 280 && setStory(t)}
+              placeholder="The full saga of why the town owes you this..."
+              placeholderTextColor={color.text.tertiary}
+              multiline
+              style={[styles.input, glass.card, { height: 96 }]}
+            />
+          </View>
+
+          <View style={styles.goalBlock}>
+            <View style={[styles.goalHead, hasGoal && { marginBottom: 12 }]}>
+              <View>
+                <Txt
+                  style={{
+                    fontFamily: font.headlineBold,
+                    fontSize: 14,
+                    color: color.text.primary,
+                  }}
+                >
+                  Set a Goal
+                </Txt>
+                <Txt style={{ fontFamily: font.body, fontSize: 12, color: color.text.secondary }}>
+                  Give givers a finish line
+                </Txt>
+              </View>
+              <Pressable
+                onPress={() => setHasGoal(!hasGoal)}
+                style={[
+                  styles.toggle,
+                  { backgroundColor: hasGoal ? color.action.primary : "rgba(255,255,255,0.1)" },
+                ]}
+              >
+                <View style={[styles.knob, { left: hasGoal ? 23 : 3 }]} />
+              </Pressable>
+            </View>
+            {hasGoal ? (
+              <View style={styles.goalChips}>
+                {["100", "250", "500", "1000", "2500"].map((amt) => (
+                  <Pressable
+                    key={amt}
+                    onPress={() => setGoalAmt(amt)}
+                    style={[
+                      styles.goalChip,
+                      goalAmt === amt && {
+                        borderColor: color.action.primary,
+                        backgroundColor: "rgba(245,179,43,0.15)",
+                      },
+                    ]}
+                  >
+                    <Txt
+                      style={{
+                        fontFamily: font.mono,
+                        fontSize: 12,
+                        color: goalAmt === amt ? color.action.primary : color.text.secondary,
+                      }}
+                    >
+                      {parseInt(amt, 10).toLocaleString()}
+                    </Txt>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </ScrollView>
+      ) : null}
+
+      {step === 2 ? (
+        <View style={styles.showStep}>
+          <Txt style={{ fontSize: 64 }}>📹</Txt>
+          <Txt style={styles.showTitle}>Show them what you have</Txt>
+          <Txt style={styles.showSub}>60 seconds max. Make it count.</Txt>
+          <Pressable
+            onPress={() => Alert.alert("Camera opens on your device 📷")}
+            style={[styles.recordBtn, glass.card]}
+          >
+            <Txt
+              style={{
+                fontFamily: font.headlineBold,
+                fontSize: 15,
+                color: color.text.primary,
+              }}
+            >
+              Record Video
             </Txt>
           </Pressable>
-        ) : (
-          <CameraButton
-            onImagePicked={handleImagePicked}
-            size="large"
-            disabled={uploading}
+          <Pressable
+            onPress={() => Alert.alert("AI dramatization unlocks post-review 🎭")}
+            style={[styles.aiCard, glass.card]}
+          >
+            <Txt
+              style={{
+                fontFamily: font.headlineBold,
+                fontSize: 12,
+                color: color.text.tertiary,
+                marginBottom: 3,
+              }}
+            >
+              Dramatize with AI
+            </Txt>
+            <Txt style={{ fontFamily: font.body, fontSize: 12, color: color.text.tertiary }}>
+              The Sheriff checks it first. Unlocks after safety scan.
+            </Txt>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {step === 3 ? (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16 }}>
+          <Txt style={styles.previewLabel}>How it will look</Txt>
+          <BegCard
+            beg={{
+              ...BEGS[0],
+              beg: title || "Fund my championship mustache wax regionals",
+              goal: hasGoal ? parseInt(goalAmt, 10) : null,
+            }}
           />
-        )}
+        </ScrollView>
+      ) : null}
+
+      <View style={styles.footer}>
+        {step > 1 ? (
+          <Pressable onPress={() => setStep(step - 1)} style={[styles.backBtn, glass.card]}>
+            <Txt
+              style={{
+                fontFamily: font.headlineBold,
+                fontSize: 15,
+                color: color.text.primary,
+              }}
+            >
+              Back
+            </Txt>
+          </Pressable>
+        ) : null}
+        <View style={{ flex: 2 }}>
+          <GoldButton
+            title={step === 3 ? "Post it" : "Continue →"}
+            onPress={() => (step < 3 ? setStep(step + 1) : handlePost())}
+            style={{ height: 52, borderRadius: 12 }}
+          />
+        </View>
       </View>
-
-      <Card
-        style={{
-          backgroundColor: color.surface.raised,
-          paddingVertical: space[4],
-          paddingHorizontal: space[4],
-          marginBottom: space[8],
-        }}
-      >
-        <Txt variant="bodyS" style={{ marginBottom: space[2] }}>
-          YOUR GOAL
-        </Txt>
-        <Txt variant="displayM" color={color.action.primary}>
-          {formatCents(parseInt(goalCents || "0") * 100)}
-        </Txt>
-        <Txt variant="bodyS" color={color.text.secondary} style={{ marginTop: space[2] }}>
-          5% Monarch&apos;s Cut. Every gift is tracked.
-        </Txt>
-      </Card>
-
-      <Button
-        title="Post to Main Street"
-        onPress={handlePublish}
-        loading={loading}
-        size="lg"
-        style={{ marginBottom: space[6] }}
-      />
-    </Screen>
+    </KeyboardAvoidingView>
   )
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.bg.canvas },
+  stepRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    flexDirection: "row",
+    gap: 10,
+  },
+  stepBar: { height: 3, borderRadius: 2, width: "100%", marginBottom: 4 },
+  guidance: {
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(228,218,192,0.7)",
+  },
+  guidanceTitle: {
+    fontFamily: font.headlineBold,
+    fontSize: 12,
+    color: color.text.inverse,
+    marginBottom: 5,
+  },
+  guidanceBody: {
+    fontFamily: font.body,
+    fontSize: 11,
+    color: color.dust,
+    lineHeight: 18,
+  },
+  label: {
+    fontFamily: font.headlineBlack,
+    fontSize: 11,
+    color: color.text.secondary,
+    marginBottom: 6,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  input: {
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    color: color.text.primary,
+    fontFamily: font.body,
+    fontSize: 15,
+    textAlignVertical: "top",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  goalBlock: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  goalHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 999,
+    position: "relative",
+  },
+  knob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: color.text.primary,
+    position: "absolute",
+    top: 3,
+  },
+  goalChips: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  goalChip: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  showStep: {
+    flex: 1,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+  },
+  showTitle: {
+    fontFamily: font.headlineBold,
+    fontSize: 20,
+    color: color.text.primary,
+    textAlign: "center",
+  },
+  showSub: {
+    fontFamily: font.body,
+    fontSize: 14,
+    color: color.text.secondary,
+    textAlign: "center",
+  },
+  recordBtn: {
+    paddingVertical: 13,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  aiCard: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    width: "100%",
+  },
+  previewLabel: {
+    fontFamily: font.headlineBlack,
+    fontSize: 11,
+    color: color.text.secondary,
+    marginBottom: 10,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 28,
+    flexDirection: "row",
+    gap: 10,
+  },
+  backBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.09)",
+  },
+})

@@ -10,6 +10,7 @@ import { Archivo_600SemiBold, Archivo_700Bold, Archivo_900Black } from "@expo-go
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter"
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono"
 import { AuthProvider } from "@/providers/AuthProvider"
+import { WalletProvider } from "@/providers/WalletProvider"
 import { color } from "@/theme/tokens"
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -36,23 +37,26 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.bg.canvas }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: color.bg.canvas },
-              animation: "slide_from_right",
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(onboarding)" />
-            <Stack.Screen name="(app)" />
-            <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
-            <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-          </Stack>
-        </AuthProvider>
+        <WalletProvider>
+          <AuthProvider>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: color.bg.canvas },
+                animation: "slide_from_right",
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(onboarding)" />
+              <Stack.Screen name="(app)" />
+              <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
+              <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+              <Stack.Screen name="challenge-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+            </Stack>
+          </AuthProvider>
+        </WalletProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
