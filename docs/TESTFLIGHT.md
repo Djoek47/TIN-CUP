@@ -1,5 +1,15 @@
 # TestFlight — tonight
 
+## Cloud Agent secret
+
+Add Cursor Cloud Agent secret **`EXPO_TOKEN`** (Expo → Account → Access Tokens).
+Never commit it. After adding, restart the agent so the env picks it up, then:
+
+```bash
+npm run eas:whoami
+npm run eas:build:ios
+```
+
 ## Prerequisites (on your Mac)
 1. Apple Developer account membership
 2. App created in App Store Connect (`com.tincup.app`)

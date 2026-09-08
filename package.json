@@ -10,7 +10,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:ios": "eas build -p ios --profile production",
-    "submit:ios": "eas submit -p ios --profile production"
+    "submit:ios": "eas submit -p ios --profile production",
+    "eas:whoami": "bash scripts/eas-with-token.sh whoami",
+    "eas:build:ios": "bash scripts/eas-with-token.sh build",
+    "eas:submit:ios": "bash scripts/eas-with-token.sh submit"
   },
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",
