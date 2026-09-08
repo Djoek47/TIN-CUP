@@ -1,5 +1,24 @@
 # TestFlight — tonight
 
+## Apple credentials (required for TestFlight)
+
+Non-interactive cloud builds need App Store Connect API access. Add these Cloud Agent secrets:
+
+| Secret | What it is |
+|---|---|
+| `EXPO_TOKEN` | Expo access token (done) |
+| `EXPO_ASC_KEY_ID` | App Store Connect API Key ID |
+| `EXPO_ASC_ISSUER_ID` | App Store Connect Issuer ID |
+| `EXPO_ASC_API_KEY_P8` | Full contents of the `.p8` private key |
+
+Create the key: [App Store Connect → Users and Access → Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api)
+
+One-time alternative on your Mac (stores creds on Expo servers):
+```bash
+eas credentials -p ios
+eas build -p ios --profile production
+```
+
 ## Cloud Agent secret
 
 Add Cursor Cloud Agent secret **`EXPO_TOKEN`** (Expo → Account → Access Tokens).

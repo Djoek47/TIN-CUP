@@ -20,6 +20,7 @@
       "buildNumber": "2",
       "usesAppleSignIn": true,
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to capture profile photos",
         "NSPhotoLibraryUsageDescription": "We need access to your photo library to choose images",
         "NSPhotoLibraryAddUsageDescription": "We need to save photos to your library",
