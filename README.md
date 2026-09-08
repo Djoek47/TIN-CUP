@@ -1,123 +1,29 @@
-# TIN CUP · Perdition Gulch
+# Tin Cup — The Vessel (Expo)
 
-> "Where strangers throw real gold at strangers — for glory, for laughs, for the story."
+Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber = given. Lime = received.
 
-A full-featured Western-themed social tipping app built with React 18, Tailwind CSS v4, and the Gulch Design System. Dark-first, gold-accented, glass-morphic iOS 27 aesthetic.
+## Try it now (no Apple distribution)
 
----
+**OTA update published** to branch `preview` (SDK 57):
 
-## Stack
+https://expo.dev/accounts/djoek47/projects/tin-cup/updates/2892a483-2d61-4b76-9a41-db3926686f9d
 
-| Layer | Tech |
-|---|---|
-| Framework | React 18 + TypeScript |
-| Styling | Tailwind CSS v4 + custom glass utilities |
-| Build | Vite 6 |
-| Animation | motion/react + CSS keyframes |
-| Notifications | sonner |
-| Icons | Inline SVG (custom Gulch icon set) |
-| Fonts | Ultra · Archivo · Inter · IBM Plex Mono |
-
----
-
-## Project Structure
-
-```
-src/
-├── app/
-│   └── App.tsx          ← Full app (splash → main, all screens)
-├── components/
-│   └── TinCupApp.tsx    ← V0-compatible re-export
-├── styles/
-│   ├── fonts.css        ← Google Fonts + keyframes + glass utilities
-│   ├── theme.css        ← Tailwind tokens (Gulch Design System)
-│   └── index.css        ← Tailwind entry + @theme inline mapping
-└── main.tsx
-```
-
----
-
-## Screens
-
-| Screen | Notes |
-|---|---|
-| Splash | 2.8s auto-advance, coin drop animation |
-| Welcome | Pan background, CTA |
-| Choose Fate | Accordion expand — Vagrant (free) vs Lord ($100) |
-| Character Creator | 5-category item picker, locked Lord-only items |
-| Main Street | Live rail · Trending begs · Bounties · Leaderboard teaser |
-| Feed of Madness | TikTok-style clips · Double-tap toss · Follow/share/flag |
-| Lobby | Stats strip · Filter pills · Beg grid |
-| Live Stream | Battle bar · Gift rail (×10/×50/×100/×500) · Chat |
-| Wallet | Balance hero · Ledger · Deposit → Bank handoff · Cash out |
-| Beg Detail | Gift tiers · React · Share |
-| Challenge Detail | Bounty details · Rules · Enter button |
-| Composer | 3-step wizard (Write → Show → Preview) |
-| Leaderboard | Filter tabs · Period selector · Your rank |
-| Notifications | Grouped Money / Town / The Law |
-| Search | Live query filter · Trending tags |
-| Ascension | Scroll crossfade Vagrant→Lord |
-| PONR | 2-second hold-to-confirm fill bar |
-| Coronation | Coin rain · Crown animation |
-| Profile | Wanted Poster parchment card · Ascension CTA |
-
----
-
-## Design System — Gulch Tokens
-
-| Token | Value | Role |
-|---|---|---|
-| `m900` | `#0B0E14` | Page background |
-| `g500` | `#F5B32B` | Gold — money, Lords |
-| `c500` | `#3F9B5B` | Cactus — received, cash out |
-| `o500` | `#8E2D30` | Oxblood — danger, flagged |
-| `p100` | `#F4EEDD` | Parchment — Wanted Posters |
-
-### Glass Classes (fonts.css)
-
-```css
-.tin-glass           /* card-level blur */
-.tin-glass-elevated  /* sheet/panel heavy blur */
-.tin-glass-gold      /* gold-tinted translucent */
-.tin-glass-nav       /* bottom nav pill, 28px blur */
-.tin-press           /* 80ms scale(0.97) on active */
-.tin-press-sm        /* 80ms scale(0.94) on active */
-```
-
----
-
-## Local Dev
+Or run a live tunnel:
 
 ```bash
-pnpm install
-pnpm build
+npm install --legacy-peer-deps
+npm run dev
 ```
 
----
+Open in **Expo Go (SDK 57)** via QR / tunnel URL.
 
-## V0 Usage
+See [docs/OTA.md](docs/OTA.md).
 
-Import the component directly in a Next.js / V0 project:
+## Money
+Default mock wallet: `TEST WALLET · FAKE MONEY`. Optional Base Sepolia when `EXPO_PUBLIC_MONEY_MODE=testnet` + thirdweb client id.
 
-```tsx
-import TinCupApp from "@/components/TinCupApp"
+## Apple TestFlight
+Deferred until you create distribution credentials. Then follow [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md).
 
-export default function Page() {
-  return <TinCupApp />
-}
-```
-
-Ensure your project has `sonner` installed and Tailwind configured with the custom tokens from `src/styles/theme.css`.
-
----
-
-## Castes
-
-**Vagrant** — The drifter. Receives coin. Beg, perform, climb.  
-**Lord** — The patron. Gives coin. Sets bounties, runs Courts, rains gold.
-
-Lords never fall. And never go back.
-
----
-
-*Season 1: Gold Rush · Perdition Gulch · Est. Now*
+## Stack
+Expo Router 54 · Vessel dual-caste UI · mock wallet · EAS Update · camera/LiveKit fallback
