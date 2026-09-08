@@ -2,122 +2,51 @@
 
 > "Where strangers throw real gold at strangers — for glory, for laughs, for the story."
 
-A full-featured Western-themed social tipping app built with React 18, Tailwind CSS v4, and the Gulch Design System. Dark-first, gold-accented, glass-morphic iOS 27 aesthetic.
+Mobile app ported from **Figma Make Tin-Cup-V2** + Stage 1/2 product specs. Expo SDK 54 · Gulch Design System · thirdweb wallet.
 
----
+## Quick start (Expo Go)
+
+```bash
+npm install
+cp .env.example .env.local
+# Set EXPO_PUBLIC_THIRDWEB_CLIENT_ID from https://dashboard.thirdweb.com
+npm run dev
+```
+
+1. Install **Expo Go** (SDK 54 store build)
+2. Scan the tunnel QR
+3. Flow: Splash → Welcome → Choose Fate → Character Creator → Main Street
+
+Without a thirdweb client ID the app still walks the Make UI on a local demo seat.
+
+**Expo Go note:** native thirdweb in-app wallets (`thirdweb/wallets`) cannot load inside Expo Go (AWS KMS / QuickCrypto / Coinbase MWP). Identity uses a local `0x` seat there; failed on-chain attempts show **No gold moved.** Real USDT + in-app wallet need a custom/dev client build with the same AuthProvider call sites.
+
+## Make parity screens
+
+Entry: Splash, Welcome, Choose Fate, Character Creator  
+Tabs: Main Street, Feed of Madness, Lobbies, Wanted Poster (+ ActionOrb)  
+Subs: Wallet, Deposit, Cash Out, Beg Detail, Challenge Detail, Composer, Live Stream, Notifications, Search, Leaderboard, Ascension, PONR, Coronation
+
+Source snapshot: `docs/figma-make/` · Product bible: `docs/stage/`
 
 ## Stack
 
-| Layer | Tech |
+- Expo Router 54 / React Native
+- GDS components in `components/gds/`
+- thirdweb v5 (`inAppWallet` guest + USDT on Polygon Amoy)
+- Supabase profiles / begs when configured
+
+## Env
+
+| Var | Purpose |
 |---|---|
-| Framework | React 18 + TypeScript |
-| Styling | Tailwind CSS v4 + custom glass utilities |
-| Build | Vite 6 |
-| Animation | motion/react + CSS keyframes |
-| Notifications | sonner |
-| Icons | Inline SVG (custom Gulch icon set) |
-| Fonts | Ultra · Archivo · Inter · IBM Plex Mono |
+| `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | Wallet + chain (required for real money) |
+| `EXPO_PUBLIC_USDT_ADDRESS` | Test USDT |
+| `EXPO_PUBLIC_PROJECT_WALLET` | Lord $100 stake recipient |
+| `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | Profiles & begs |
+
+Failed money ops always surface: **No gold moved.**
 
 ---
 
-## Project Structure
-
-```
-src/
-├── app/
-│   └── App.tsx          ← Full app (splash → main, all screens)
-├── components/
-│   └── TinCupApp.tsx    ← V0-compatible re-export
-├── styles/
-│   ├── fonts.css        ← Google Fonts + keyframes + glass utilities
-│   ├── theme.css        ← Tailwind tokens (Gulch Design System)
-│   └── index.css        ← Tailwind entry + @theme inline mapping
-└── main.tsx
-```
-
----
-
-## Screens
-
-| Screen | Notes |
-|---|---|
-| Splash | 2.8s auto-advance, coin drop animation |
-| Welcome | Pan background, CTA |
-| Choose Fate | Accordion expand — Vagrant (free) vs Lord ($100) |
-| Character Creator | 5-category item picker, locked Lord-only items |
-| Main Street | Live rail · Trending begs · Bounties · Leaderboard teaser |
-| Feed of Madness | TikTok-style clips · Double-tap toss · Follow/share/flag |
-| Lobby | Stats strip · Filter pills · Beg grid |
-| Live Stream | Battle bar · Gift rail (×10/×50/×100/×500) · Chat |
-| Wallet | Balance hero · Ledger · Deposit → Bank handoff · Cash out |
-| Beg Detail | Gift tiers · React · Share |
-| Challenge Detail | Bounty details · Rules · Enter button |
-| Composer | 3-step wizard (Write → Show → Preview) |
-| Leaderboard | Filter tabs · Period selector · Your rank |
-| Notifications | Grouped Money / Town / The Law |
-| Search | Live query filter · Trending tags |
-| Ascension | Scroll crossfade Vagrant→Lord |
-| PONR | 2-second hold-to-confirm fill bar |
-| Coronation | Coin rain · Crown animation |
-| Profile | Wanted Poster parchment card · Ascension CTA |
-
----
-
-## Design System — Gulch Tokens
-
-| Token | Value | Role |
-|---|---|---|
-| `m900` | `#0B0E14` | Page background |
-| `g500` | `#F5B32B` | Gold — money, Lords |
-| `c500` | `#3F9B5B` | Cactus — received, cash out |
-| `o500` | `#8E2D30` | Oxblood — danger, flagged |
-| `p100` | `#F4EEDD` | Parchment — Wanted Posters |
-
-### Glass Classes (fonts.css)
-
-```css
-.tin-glass           /* card-level blur */
-.tin-glass-elevated  /* sheet/panel heavy blur */
-.tin-glass-gold      /* gold-tinted translucent */
-.tin-glass-nav       /* bottom nav pill, 28px blur */
-.tin-press           /* 80ms scale(0.97) on active */
-.tin-press-sm        /* 80ms scale(0.94) on active */
-```
-
----
-
-## Local Dev
-
-```bash
-pnpm install
-pnpm build
-```
-
----
-
-## V0 Usage
-
-Import the component directly in a Next.js / V0 project:
-
-```tsx
-import TinCupApp from "@/components/TinCupApp"
-
-export default function Page() {
-  return <TinCupApp />
-}
-```
-
-Ensure your project has `sonner` installed and Tailwind configured with the custom tokens from `src/styles/theme.css`.
-
----
-
-## Castes
-
-**Vagrant** — The drifter. Receives coin. Beg, perform, climb.  
-**Lord** — The patron. Gives coin. Sets bounties, runs Courts, rains gold.
-
-Lords never fall. And never go back.
-
----
-
-*Season 1: Gold Rush · Perdition Gulch · Est. Now*
+*Season 1: Gold Rush · The Gulch Design System*

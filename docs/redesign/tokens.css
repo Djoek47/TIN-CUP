@@ -1,0 +1,238 @@
+/* ══════════════════════════════════════════════════════════════
+   TIN CUP — "The Vessel" design tokens
+   Money is light and liquid in glass. Amber = given. Lime = received.
+
+   Usage: replace src/styles/theme.css with this file.
+   Set on the app root:  data-caste="vagrant|lord"  data-theme="dark|light"
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* chroma constants — never darkened, used for solid fills only */
+  --amber-pure: #FFB43D;
+  --lime-pure:  #C4F000;
+  --bone:       #EDE6D6;   /* stands in for lime in the Lord world */
+  --fill-ink:   #0a0a0a;   /* text on any solid accent fill */
+
+  /* motion */
+  --ease-enter:  cubic-bezier(.16, 1, .3, 1);
+  --ease-liquid: cubic-bezier(.22, 1, .28, 1);
+  --ease-exit:   cubic-bezier(.4, 0, 1, 1);
+  --dur-press: 80ms;
+  --dur-screen: 620ms;
+  --dur-fill: 2600ms;
+
+  /* type */
+  --font-ui:   Archivo, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* space / shape */
+  --pad-screen: 22px;
+  --gap-section: 26px;
+  --row-pad: 14px;
+  --btn-h: 56px;
+  --nav-blur: 24px;
+}
+
+/* ─── VAGRANT · DARK (canonical) ─────────────────────────────── */
+:root,
+[data-caste='vagrant'][data-theme='dark'] {
+  --bg: #08090B;
+  --ink: #F4F3F0;
+  --dim: rgba(244, 243, 240, .5);
+  --faint: rgba(244, 243, 240, .32);
+  --line: rgba(255, 255, 255, .10);
+  --surf: rgba(255, 255, 255, .035);
+  --gls: rgba(255, 255, 255, .22);
+  --navbg: rgba(20, 21, 24, .72);
+  --navfade: rgba(8, 9, 11, .92);
+  --amb: var(--amber-pure);
+  --ambfill: var(--amber-pure);
+  --lim: var(--lime-pure);
+  --limfill: var(--lime-pure);
+  --rad: 20px;
+  --rad-pill: 100px;
+  --track: .3em;
+}
+
+/* ─── VAGRANT · LIGHT ────────────────────────────────────────── */
+[data-caste='vagrant'][data-theme='light'] {
+  --bg: #EDEBE5;
+  --ink: #0B0C0E;
+  --dim: rgba(11, 12, 14, .55);
+  --faint: rgba(11, 12, 14, .38);
+  --line: rgba(11, 12, 14, .13);
+  --surf: rgba(11, 12, 14, .035);
+  --gls: rgba(11, 12, 14, .22);
+  --navbg: rgba(255, 255, 255, .72);
+  --navfade: rgba(237, 235, 229, .94);
+  --amb: #A86A00;              /* text-safe amber */
+  --ambfill: var(--amber-pure);
+  --lim: #6E8C00;              /* text-safe lime */
+  --limfill: var(--lime-pure);
+  --rad: 20px;
+  --rad-pill: 100px;
+  --track: .3em;
+}
+
+/* ─── LORD · DARK — warm amber-black, gold hairlines, no lime ─── */
+[data-caste='lord'][data-theme='dark'] {
+  --bg: #0C0906;
+  --ink: #F7F1E4;
+  --dim: rgba(247, 241, 228, .52);
+  --faint: rgba(247, 241, 228, .34);
+  --line: rgba(255, 180, 61, .16);
+  --surf: rgba(255, 180, 61, .05);
+  --gls: rgba(255, 214, 150, .28);
+  --navbg: rgba(30, 22, 12, .78);
+  --navfade: rgba(12, 9, 6, .94);
+  --amb: var(--amber-pure);
+  --ambfill: var(--amber-pure);
+  --lim: var(--bone);
+  --limfill: var(--bone);
+  --rad: 8px;
+  --rad-pill: 4px;
+  --track: .44em;
+}
+
+/* ─── LORD · LIGHT ───────────────────────────────────────────── */
+[data-caste='lord'][data-theme='light'] {
+  --bg: #F2ECDF;
+  --ink: #17110A;
+  --dim: rgba(23, 17, 10, .58);
+  --faint: rgba(23, 17, 10, .4);
+  --line: rgba(120, 80, 10, .18);
+  --surf: rgba(168, 106, 0, .06);
+  --gls: rgba(120, 80, 10, .26);
+  --navbg: rgba(255, 251, 242, .78);
+  --navfade: rgba(242, 236, 223, .95);
+  --amb: #8A5300;
+  --ambfill: var(--amber-pure);
+  --lim: #4A3A22;
+  --limfill: #6B573A;
+  --rad: 8px;
+  --rad-pill: 4px;
+  --track: .44em;
+}
+
+/* ─── Tailwind v4 mapping ────────────────────────────────────── */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-surf: var(--surf);
+  --color-glass: var(--gls);
+  --color-give: var(--amb);
+  --color-give-fill: var(--ambfill);
+  --color-receive: var(--lim);
+  --color-receive-fill: var(--limfill);
+  --color-fill-ink: var(--fill-ink);
+  --radius-shell: var(--rad);
+  --radius-pill: var(--rad-pill);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+@layer base {
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--amb); text-decoration: none; }
+  a:hover { color: color-mix(in oklch, var(--amb), white 35%); }
+}
+
+/* ─── Primitives ─────────────────────────────────────────────── */
+
+/* Every number in the app. Never proportional figures. */
+.tc-num {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+
+/* Mono section label: 9.5px, wide, uppercase */
+.tc-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* List rows are hairlines, not cards */
+.tc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--row-pad) 0;
+  border-top: 1px solid var(--line);
+}
+
+.tc-pill {
+  border-radius: var(--rad-pill);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+
+.tc-btn {
+  height: var(--btn-h);
+  border-radius: var(--rad-pill);
+  background: var(--ambfill);
+  color: var(--fill-ink);
+  font-weight: 700;
+  letter-spacing: .1em;
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--dur-press) cubic-bezier(.2, 0, 0, 1);
+}
+.tc-btn:active { transform: scale(.97); }
+
+.tc-nav {
+  background: var(--navbg);
+  backdrop-filter: blur(var(--nav-blur));
+  -webkit-backdrop-filter: blur(var(--nav-blur));
+  border: 1px solid var(--line);
+  border-radius: var(--rad-pill);
+}
+
+/* Accent glow — box-shadow, never a blur filter */
+.tc-glow-give    { box-shadow: 0 0 14px var(--amb); }
+.tc-glow-receive { box-shadow: 0 0 14px var(--lim); }
+
+/* ─── Keyframes ──────────────────────────────────────────────── */
+@keyframes tc-in {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tc-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tc-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .45; transform: scale(.82); }
+}
+@keyframes tc-shimmer {
+  from { background-position: -120% 0; }
+  to   { background-position: 220% 0; }
+}
+
+.tc-screen { animation: tc-in var(--dur-screen) var(--ease-enter) both; }
+.tc-live-dot { animation: tc-live-pulse 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-screen { animation: none; }
+  .tc-live-dot { animation: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Tin Cup",
+    "slug": "tin-cup",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "tincup",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0E14",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0E14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tincup.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need access to your camera to capture profile photos",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to choose images",
+        "NSPhotoLibraryAddUsageDescription": "We need to save photos to your library",
+        "NSMicrophoneUsageDescription": "We need microphone access for video recording (optional)"
+      }
+    },
+    "android": {
+      "package": "com.tincup.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0E14",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-camera",
+      "expo-image-picker",
+      [
+        "expo-notifications",
+        {
+          "color": "#F5B32B"
+        }
+      ],
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "supabaseUrl": "https://owkyrwkuifhiqmbjpeob.supabase.co",
+      "supabaseAnonKey": "sb_publishable_PjVrAFwj2bKWv9kGy-MfMA_eXYzgtzX"
+    }
+  }
+}
