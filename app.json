@@ -35,10 +35,10 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -66,7 +66,12 @@
     },
     "extra": {
       "supabaseUrl": "https://owkyrwkuifhiqmbjpeob.supabase.co",
-      "supabaseAnonKey": "sb_publishable_PjVrAFwj2bKWv9kGy-MfMA_eXYzgtzX"
-    }
+      "supabaseAnonKey": "sb_publishable_PjVrAFwj2bKWv9kGy-MfMA_eXYzgtzX",
+      "router": {},
+      "eas": {
+        "projectId": "8f127ab8-eec3-4110-8492-b1ce0cb7739c"
+      }
+    },
+    "owner": "djoek47"
   }
 }
