@@ -12,7 +12,7 @@ Apple TestFlight / Distribution Certificate is deferred. Use **Expo Go + EAS Upd
 npm install --legacy-peer-deps
 npm run dev
 ```
-Scan the QR with Expo Go (SDK 54).
+Scan the QR with Expo Go (SDK 57).
 
 ## Publish an OTA update
 Requires `EXPO_TOKEN` in the environment:

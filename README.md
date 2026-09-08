@@ -4,9 +4,9 @@ Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber
 
 ## Try it now (no Apple distribution)
 
-**OTA update published** to branch `preview` (SDK 54):
+**OTA update published** to branch `preview` (SDK 57):
 
-https://expo.dev/accounts/djoek47/projects/tin-cup/updates/b94a205f-6b37-4166-bd96-a42dd2b53731
+https://expo.dev/accounts/djoek47/projects/tin-cup/updates/2892a483-2d61-4b76-9a41-db3926686f9d
 
 Or run a live tunnel:
 
@@ -15,7 +15,7 @@ npm install --legacy-peer-deps
 npm run dev
 ```
 
-Open in **Expo Go (SDK 54)** via QR / tunnel URL.
+Open in **Expo Go (SDK 57)** via QR / tunnel URL.
 
 See [docs/OTA.md](docs/OTA.md).
 
