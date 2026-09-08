@@ -1,240 +1,201 @@
 import { useState } from "react"
-import { View, ScrollView, Pressable, StyleSheet } from "react-native"
+import { ScrollView, View, Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
-import { TopAppBar, CoinAmount, TitleChip } from "@/components/gds"
-import { Txt } from "@/components/ui/Txt"
-import { LEADERBOARD } from "@/lib/make-data"
-import { glass } from "@/theme/glass"
-import { color, font } from "@/theme/tokens"
+import {
+  VesselScreen,
+  ScreenHeader,
+  Label,
+  UiText,
+  MonoNum,
+  Hairline,
+  Row,
+} from "@/components/vessel"
+import { useVessel } from "@/providers/VesselTheme"
+import { pure, space } from "@/theme/vessel"
 
-const TABS = ["Richest Baron", "Luckiest Drifter", "Fastest Climber", "Most Ridiculous"] as const
-const PERIODS = ["Today", "Week", "Season"] as const
+const PERIODS = ["DAY", "WEEK", "MONTH", "ALL"] as const
 
-/** S24 Leaderboards — Make LeaderboardScreen */
+const DATA = [
+  {
+    podium: [
+      { n: "@nova", a: "$1.2K" },
+      { n: "@kai", a: "$1.8K" },
+      { n: "@zed", a: "$0.9K" },
+    ],
+    list: [
+      { n: "@ace", a: "$720" },
+      { n: "@luna", a: "$580" },
+      { n: "@phantom", a: "$430" },
+      { n: "@stella", a: "$360" },
+      { n: "@kingx", a: "$320" },
+    ],
+    yr: "31",
+    ya: "$95",
+  },
+  {
+    podium: [
+      { n: "@kingx", a: "$4.1K" },
+      { n: "@stella", a: "$6.7K" },
+      { n: "@zed", a: "$3.2K" },
+    ],
+    list: [
+      { n: "@kai", a: "$2.9K" },
+      { n: "@nova", a: "$2.1K" },
+      { n: "@ace", a: "$1.8K" },
+      { n: "@luna", a: "$1.4K" },
+      { n: "@phantom", a: "$1.1K" },
+    ],
+    yr: "18",
+    ya: "$640",
+  },
+  {
+    podium: [
+      { n: "@stella", a: "$12K" },
+      { n: "@kai", a: "$18K" },
+      { n: "@kingx", a: "$9.4K" },
+    ],
+    list: [
+      { n: "@zed", a: "$7.2K" },
+      { n: "@nova", a: "$6.1K" },
+      { n: "@ace", a: "$4.8K" },
+      { n: "@luna", a: "$3.9K" },
+      { n: "@phantom", a: "$3.1K" },
+    ],
+    yr: "12",
+    ya: "$2.1K",
+  },
+  {
+    podium: [
+      { n: "@zed", a: "$42K" },
+      { n: "@kai", a: "$61K" },
+      { n: "@stella", a: "$38K" },
+    ],
+    list: [
+      { n: "@kingx", a: "$29K" },
+      { n: "@nova", a: "$24K" },
+      { n: "@ace", a: "$19K" },
+      { n: "@luna", a: "$15K" },
+      { n: "@phantom", a: "$12K" },
+    ],
+    yr: "47",
+    ya: "$8.4K",
+  },
+]
+
 export default function LeaderboardScreen() {
   const router = useRouter()
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Richest Baron")
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]>("Week")
+  const { v } = useVessel()
+  const [period, setPeriod] = useState(0)
+  const D = DATA[period]
+  // podium visual order: 2nd, 1st, 3rd
+  const [second, first, third] = [D.podium[0], D.podium[1], D.podium[2]]
 
   return (
-    <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <TopAppBar title="Leaderboards" overline="THE GULCH" onBack={() => router.back()} />
+    <VesselScreen>
+      <ScreenHeader title="Top Givers" onBack={() => router.back()} />
+      <Row style={{ gap: 6, marginTop: 8 }}>
+        {PERIODS.map((p, i) => (
+          <Pressable
+            key={p}
+            onPress={() => setPeriod(i)}
+            style={[
+              styles.period,
+              {
+                borderRadius: v.radPill,
+                backgroundColor: i === period ? v.ambfill : "transparent",
+                borderColor: i === period ? "transparent" : v.line,
+              },
+            ]}
+          >
+            <Label style={{ color: i === period ? pure.fillInk : v.dim }}>{p}</Label>
+          </Pressable>
+        ))}
+      </Row>
 
-        <View style={[styles.season, glass.gold]}>
-          <Txt style={styles.seasonTxt}>Season 1: Gold Rush · 23 days remaining</Txt>
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Row style={styles.podium}>
+          <PodiumPlace place={2} name={second.n} amt={second.a} h={96} />
+          <PodiumPlace place={1} name={first.n} amt={first.a} h={150} highlight />
+          <PodiumPlace place={3} name={third.n} amt={third.a} h={70} />
+        </Row>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabs}
-        >
-          {TABS.map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setTab(t)}
-              style={[
-                styles.tab,
-                tab === t && {
-                  borderColor: color.action.primary,
-                  backgroundColor: "rgba(245,179,43,0.15)",
-                },
-              ]}
-            >
-              <Txt
-                style={{
-                  fontFamily: font.headlineBold,
-                  fontSize: 11,
-                  color: tab === t ? color.action.primary : color.text.secondary,
-                }}
-              >
-                {t}
-              </Txt>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <View style={[styles.periods, glass.card]}>
-          {PERIODS.map((p) => (
-            <Pressable
-              key={p}
-              onPress={() => setPeriod(p)}
-              style={[
-                styles.period,
-                period === p && {
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  borderColor: "rgba(255,255,255,0.1)",
-                },
-              ]}
-            >
-              <Txt
-                style={{
-                  fontFamily: font.headlineBold,
-                  fontSize: 13,
-                  color: period === p ? color.text.primary : color.text.secondary,
-                }}
-              >
-                {p}
-              </Txt>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={{ paddingHorizontal: 16 }}>
-          {LEADERBOARD.map((row) => {
-            const medalCol =
-              [color.action.primary, color.text.secondary, color.dust][row.rank - 1] ??
-              color.text.tertiary
-            return (
-              <View key={row.rank} style={styles.row}>
-                <View
-                  style={[
-                    styles.medal,
-                    {
-                      backgroundColor:
-                        row.rank <= 3 ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-                      borderColor: row.rank <= 3 ? medalCol : "rgba(255,255,255,0.08)",
-                    },
-                  ]}
-                >
-                  <Txt
-                    style={{
-                      fontFamily: font.display,
-                      fontSize: 13,
-                      color: row.rank <= 3 ? medalCol : color.text.tertiary,
-                    }}
-                  >
-                    {row.rank}
-                  </Txt>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Txt
-                    style={{
-                      fontFamily: font.headlineBold,
-                      fontSize: 14,
-                      color: color.text.primary,
-                    }}
-                  >
-                    {row.name}
-                  </Txt>
-                  <TitleChip title={row.title} isLord small />
-                </View>
-                <CoinAmount value={row.value} size="S" />
-              </View>
-            )
-          })}
-
-          <View style={[styles.youRow, glass.gold]}>
-            <View style={styles.youMedal}>
-              <Txt style={{ fontFamily: font.display, fontSize: 10, color: color.action.primary }}>
-                412
-              </Txt>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Txt
-                style={{
-                  fontFamily: font.headlineBold,
-                  fontSize: 14,
-                  color: color.action.primary,
-                }}
-              >
-                You — DustyPete
-              </Txt>
-              <TitleChip title="Folk Hero" small />
-            </View>
-            <CoinAmount value="1,240" size="S" />
+        {D.list.map((row, i) => (
+          <View key={row.n}>
+            <Hairline />
+            <Row style={styles.row}>
+              <MonoNum style={{ width: 28, color: v.dim }}>{String(i + 4).padStart(2, "0")}</MonoNum>
+              <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+                {row.n}
+              </UiText>
+              <MonoNum style={{ color: v.amb }}>{row.a}</MonoNum>
+            </Row>
           </View>
+        ))}
 
-          <Txt style={styles.quote}>
-            {'"Fresh season. Nobody\'s rich yet. Terrifying."'}
-          </Txt>
+        <View style={[styles.you, { borderColor: v.amb, backgroundColor: v.surf, borderRadius: v.rad }]}>
+          <Row style={{ alignItems: "center" }}>
+            <Label style={{ color: v.amb }}>YOUR RANK</Label>
+            <View style={{ flex: 1 }} />
+            <MonoNum style={{ color: v.amb, marginRight: 12 }}>#{D.yr}</MonoNum>
+            <MonoNum>{D.ya}</MonoNum>
+          </Row>
         </View>
       </ScrollView>
+    </VesselScreen>
+  )
+}
+
+function PodiumPlace({
+  place,
+  name,
+  amt,
+  h,
+  highlight,
+}: {
+  place: number
+  name: string
+  amt: string
+  h: number
+  highlight?: boolean
+}) {
+  const { v } = useVessel()
+  return (
+    <View style={{ flex: 1, alignItems: "center", gap: 8 }}>
+      <Label style={{ color: highlight ? v.amb : v.dim }}>{name}</Label>
+      <MonoNum style={{ color: highlight ? v.amb : v.dim, fontSize: highlight ? 13 : 11 }}>{amt}</MonoNum>
+      <View
+        style={{
+          width: "100%",
+          height: h,
+          borderTopLeftRadius: 8,
+          borderTopRightRadius: 8,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderBottomWidth: 0,
+          borderColor: highlight ? "rgba(255,180,61,0.5)" : v.gls,
+          backgroundColor: highlight ? "rgba(255,180,61,0.28)" : "rgba(255,180,61,0.1)",
+          alignItems: "center",
+          paddingTop: 12,
+        }}
+      >
+        <MonoNum style={{ fontSize: highlight ? 23 : 19 }}>{place}</MonoNum>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg.canvas },
-  season: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  seasonTxt: {
-    fontFamily: font.body,
-    fontSize: 12,
-    color: color.action.primary,
-  },
-  tabs: { paddingHorizontal: 16, paddingBottom: 12, gap: 7 },
-  tab: {
-    paddingVertical: 7,
-    paddingHorizontal: 13,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
-    backgroundColor: "rgba(255,255,255,0.04)",
-  },
-  periods: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    flexDirection: "row",
-    borderRadius: 12,
-    padding: 4,
-  },
   period: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: "transparent",
     alignItems: "center",
+    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
-  },
-  medal: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  youRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 12,
-  },
-  youMedal: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 2,
-    borderColor: color.action.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quote: {
-    textAlign: "center",
-    marginTop: 20,
-    fontFamily: font.body,
-    fontSize: 11,
-    color: color.text.tertiary,
-    fontStyle: "italic",
+  podium: { alignItems: "flex-end", gap: 12, marginTop: 36, height: 220 },
+  row: { paddingVertical: space.rowPad, alignItems: "center" },
+  you: {
+    marginTop: 18,
+    marginBottom: 12,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 })

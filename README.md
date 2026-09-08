@@ -1,52 +1,42 @@
-# TIN CUP · Perdition Gulch
+# Tin Cup — The Vessel (Expo)
 
-> "Where strangers throw real gold at strangers — for glory, for laughs, for the story."
+Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Design: money is light in glass. Amber = given. Lime = received.
 
-Mobile app ported from **Figma Make Tin-Cup-V2** + Stage 1/2 product specs. Expo SDK 54 · Gulch Design System · thirdweb wallet.
-
-## Quick start (Expo Go)
+## Tonight TestFlight MVP
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env.local
-# Set EXPO_PUBLIC_THIRDWEB_CLIENT_ID from https://dashboard.thirdweb.com
 npm run dev
 ```
 
-1. Install **Expo Go** (SDK 54 store build)
-2. Scan the tunnel QR
-3. Flow: Splash → Welcome → Choose Fate → Character Creator → Main Street
+Flow: Splash → Get Started → Connect → Verify → Choose Fate → Home  
+Mock wallet is default (`TEST WALLET · FAKE MONEY`).
 
-Without a thirdweb client ID the app still walks the Make UI on a local demo seat.
+### TestFlight (you run locally with Apple creds)
 
-**Expo Go note:** native thirdweb in-app wallets (`thirdweb/wallets`) cannot load inside Expo Go (AWS KMS / QuickCrypto / Coinbase MWP). Identity uses a local `0x` seat there; failed on-chain attempts show **No gold moved.** Real USDT + in-app wallet need a custom/dev client build with the same AuthProvider call sites.
+```bash
+npm i -g eas-cli
+eas login
+eas build:configure
+eas build -p ios --profile production
+eas submit -p ios --profile production
+```
 
-## Make parity screens
+Set `submit.production.ios.ascAppId` in `eas.json` to your App Store Connect app id.
 
-Entry: Splash, Welcome, Choose Fate, Character Creator  
-Tabs: Main Street, Feed of Madness, Lobbies, Wanted Poster (+ ActionOrb)  
-Subs: Wallet, Deposit, Cash Out, Beg Detail, Challenge Detail, Composer, Live Stream, Notifications, Search, Leaderboard, Ascension, PONR, Coronation
-
-Source snapshot: `docs/figma-make/` · Product bible: `docs/stage/`
-
-## Stack
-
-- Expo Router 54 / React Native
-- GDS components in `components/gds/`
-- thirdweb v5 (`inAppWallet` guest + USDT on Polygon Amoy)
-- Supabase profiles / begs when configured
-
-## Env
+### Env
 
 | Var | Purpose |
 |---|---|
-| `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | Wallet + chain (required for real money) |
-| `EXPO_PUBLIC_USDT_ADDRESS` | Test USDT |
-| `EXPO_PUBLIC_PROJECT_WALLET` | Lord $100 stake recipient |
-| `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | Profiles & begs |
+| `EXPO_PUBLIC_MONEY_MODE` | `mock` (default) or `testnet` |
+| `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | Enables testnet rail (Base Sepolia) |
+| `EXPO_PUBLIC_USDT_ADDRESS` / `EXPO_PUBLIC_TREASURY_ADDRESS` | Test USDC + Lord stake |
+| `EXPO_PUBLIC_LIVEKIT_URL` / `EXPO_PUBLIC_LIVEKIT_TOKEN_URL` | Live video; camera fallback if unset |
 
-Failed money ops always surface: **No gold moved.**
+Design source: `docs/redesign/`
 
----
+### Scripts
 
-*Season 1: Gold Rush · The Gulch Design System*
+- `npm run dev` — Expo tunnel
+- `npm run build:ios` — EAS production iOS build

@@ -6,18 +6,30 @@ import * as SplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
 import { useFonts } from "expo-font"
 import { Ultra_400Regular } from "@expo-google-fonts/ultra"
-import { Archivo_600SemiBold, Archivo_700Bold, Archivo_900Black } from "@expo-google-fonts/archivo"
+import {
+  Archivo_400Regular,
+  Archivo_600SemiBold,
+  Archivo_700Bold,
+  Archivo_900Black,
+} from "@expo-google-fonts/archivo"
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter"
 import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono"
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+  JetBrainsMono_700Bold,
+} from "@expo-google-fonts/jetbrains-mono"
 import { AuthProvider } from "@/providers/AuthProvider"
 import { WalletProvider } from "@/providers/WalletProvider"
-import { color } from "@/theme/tokens"
+import { AppStateProvider } from "@/providers/AppState"
+import { color } from "@/theme/vessel"
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Ultra_400Regular,
+    Archivo_400Regular,
     Archivo_600SemiBold,
     Archivo_700Bold,
     Archivo_900Black,
@@ -26,6 +38,9 @@ export default function RootLayout() {
     Inter_600SemiBold,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
   })
 
   useEffect(() => {
@@ -39,22 +54,24 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <WalletProvider>
           <AuthProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: color.bg.canvas },
-                animation: "slide_from_right",
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="(app)" />
-              <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
-              <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-              <Stack.Screen name="challenge-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-            </Stack>
+            <AppStateProvider>
+              <StatusBar style="light" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: color.bg.canvas },
+                  animation: "slide_from_right",
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(onboarding)" />
+                <Stack.Screen name="(app)" />
+                <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
+                <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+                <Stack.Screen name="challenge-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+              </Stack>
+            </AppStateProvider>
           </AuthProvider>
         </WalletProvider>
       </SafeAreaProvider>

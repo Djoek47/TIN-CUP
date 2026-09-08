@@ -7,16 +7,17 @@
     "icon": "./assets/icon.png",
     "scheme": "tincup",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0E14",
+    "backgroundColor": "#08090B",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0E14"
+      "backgroundColor": "#08090B"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tincup.app",
+      "buildNumber": "2",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera to capture profile photos",
@@ -28,7 +29,7 @@
     "android": {
       "package": "com.tincup.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0E14",
+        "backgroundColor": "#08090B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -55,7 +56,7 @@
       [
         "expo-notifications",
         {
-          "color": "#F5B32B"
+          "color": "#FFB43D"
         }
       ],
       "expo-splash-screen"

@@ -1,224 +1,173 @@
-import { useState } from "react"
-import { View, ScrollView, Switch, Pressable, Alert } from "react-native"
+import { ScrollView, View, Pressable, Switch, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
-import { Screen } from "@/components/ui/Screen"
-import { Txt } from "@/components/ui/Txt"
-import { Button } from "@/components/ui/Button"
-import { Card } from "@/components/ui/Card"
-import { Field } from "@/components/ui/Field"
-import { LoadingState } from "@/components/ui/LoadingState"
-import { useAuth } from "@/providers/AuthProvider"
-import { supabase } from "@/lib/supabase"
-import { validateHandle } from "@/lib/validation"
-import { logError, getUserErrorMessage } from "@/lib/errors"
-import { color, space } from "@/theme/tokens"
+import {
+  VesselScreen,
+  ScreenHeader,
+  Label,
+  UiText,
+  Hairline,
+  Row,
+} from "@/components/vessel"
+import { useApp } from "@/providers/AppState"
+import { useVessel } from "@/providers/VesselTheme"
+import { space } from "@/theme/vessel"
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const { profile, disconnectWallet, refreshProfile, updateProfile } = useAuth()
-  const [displayName, setDisplayName] = useState(profile?.display_name || "")
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [privateProfile, setPrivateProfile] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
-  const [handleError, setHandleError] = useState("")
-
-  const handleSaveProfile = async () => {
-    if (!profile?.id) return
-
-    setSaving(true)
-    setError("")
-
-    try {
-      await updateProfile({
-        display_name: displayName || profile.handle,
-      })
-      await refreshProfile()
-      Alert.alert("Success", "Profile updated")
-    } catch (e: any) {
-      logError("saveProfile", e)
-      setError(getUserErrorMessage(e))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleChangeNotifications = (value: boolean) => {
-    setNotificationsEnabled(value)
-    // TODO: Save to user preferences
-  }
-
-  const handleChangePrivacy = (value: boolean) => {
-    setPrivateProfile(value)
-    // TODO: Save to user preferences
-  }
-
-  const handleSignOut = async () => {
-    Alert.alert("Sign Out", "Are you sure you want to disconnect your wallet?", [
-      {
-        text: "Cancel",
-        onPress: () => {},
-        style: "cancel",
-      },
-      {
-        text: "Sign Out",
-        onPress: async () => {
-          setLoading(true)
-          try {
-            await disconnectWallet()
-            router.replace("/(auth)/welcome")
-          } catch (e: any) {
-            logError("disconnectWallet", e)
-            Alert.alert("Error", "Failed to sign out")
-          } finally {
-            setLoading(false)
-          }
-        },
-        style: "destructive",
-      },
-    ])
-  }
+  const { v } = useVessel()
+  const { user, caste, theme, prefs, setTheme, setPrefs, disconnect, say } = useApp()
 
   return (
-    <Screen scroll edges={["bottom"]} contentStyle={{ paddingHorizontal: space[6] }}>
-      <LoadingState visible={loading} message="Signing out..." />
+    <VesselScreen nav={false}>
+      <ScreenHeader title="Settings" onBack={() => router.back()} />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Row style={{ justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+          <UiText weight="semi" style={{ fontSize: 16 }}>
+            @{user.handle}
+          </UiText>
+          <Pressable onPress={() => router.push("/(app)/edit-profile" as any)}>
+            <Label style={{ color: v.amb }}>EDIT PROFILE</Label>
+          </Pressable>
+        </Row>
 
-      <View style={{ paddingVertical: space[8] }}>
-        <Txt variant="displayL" center>
-          SETTINGS
-        </Txt>
-      </View>
+        <Label style={{ marginTop: space.sectionGap }}>ACCOUNT</Label>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Caste
+          </UiText>
+          <Label style={{ color: caste === "lord" ? v.amb : v.lim }}>{caste.toUpperCase()}</Label>
+        </Row>
+        {caste !== "lord" ? (
+          <>
+            <Hairline />
+            <Pressable onPress={() => router.push("/(app)/ascension" as any)} style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <UiText weight="semi" style={{ fontSize: 14 }}>
+                  Ascend to Lord
+                </UiText>
+                <Label style={{ marginTop: 4 }}>$100 ONCE</Label>
+              </View>
+              <Label style={{ color: v.amb }}>→</Label>
+            </Pressable>
+          </>
+        ) : null}
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Wallet address
+          </UiText>
+          <Label>{user.address ? `${user.address.slice(0, 6)}···${user.address.slice(-4)}` : "—"}</Label>
+        </Row>
 
-      {/* Profile Section */}
-      <Card style={{ marginBottom: space[6], padding: space[4] }}>
-        <Txt variant="headlineM" style={{ marginBottom: space[4] }}>
-          PROFILE
-        </Txt>
-
-        <Field
-          label="DISPLAY NAME"
-          placeholder="Enter your name"
-          value={displayName}
-          onChangeText={setDisplayName}
-          style={{ marginBottom: space[4] }}
-        />
-
-        <Card
-          style={{
-            backgroundColor: color.surface.card,
-            padding: space[3],
-            marginBottom: space[4],
-          }}
-        >
-          <Txt variant="bodyS" color={color.text.secondary}>
-            Handle: @{profile?.handle}
-          </Txt>
-          <Txt variant="bodyS" color={color.text.secondary} style={{ marginTop: space[1] }}>
-            Wallet: {profile?.id?.slice(0, 10)}...{profile?.id?.slice(-8)}
-          </Txt>
-        </Card>
-
-        {error && (
-          <Card
-            style={{
-              backgroundColor: color.action.danger,
-              padding: space[3],
-              marginBottom: space[4],
-            }}
+        <Label style={{ marginTop: space.sectionGap }}>APPEARANCE</Label>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Theme
+          </UiText>
+          <Pressable
+            onPress={() => setTheme(theme === "dark" ? "light" : "dark")}
+            style={[styles.themeBtn, { borderColor: v.line, borderRadius: v.radPill }]}
           >
-            <Txt variant="bodyS" color={color.text.inverse}>
-              {error}
-            </Txt>
-          </Card>
-        )}
+            <Label>{theme === "dark" ? "DARK" : "LIGHT"}</Label>
+          </Pressable>
+        </Row>
 
-        <Button
-          title="Save Changes"
-          onPress={handleSaveProfile}
-          loading={saving}
-          size="md"
+        <Label style={{ marginTop: space.sectionGap }}>NOTIFICATIONS</Label>
+        <Toggle
+          label="Gifts received"
+          value={prefs.nGifts}
+          onChange={(nGifts) => setPrefs({ nGifts })}
         />
-      </Card>
-
-      {/* Notifications Section */}
-      <Card style={{ marginBottom: space[6], padding: space[4] }}>
-        <Txt variant="headlineM" style={{ marginBottom: space[4] }}>
-          NOTIFICATIONS
-        </Txt>
-
-        <Pressable
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingVertical: space[3],
-          }}
-        >
-          <Txt variant="bodyM">Receive notifications</Txt>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={handleChangeNotifications}
-            trackColor={{ false: color.surface.card, true: color.action.primary }}
-          />
-        </Pressable>
-
-        <Txt variant="bodyS" color={color.text.secondary}>
-          Get alerts for gifts, payments, and updates
-        </Txt>
-      </Card>
-
-      {/* Privacy Section */}
-      <Card style={{ marginBottom: space[6], padding: space[4] }}>
-        <Txt variant="headlineM" style={{ marginBottom: space[4] }}>
-          PRIVACY
-        </Txt>
-
-        <Pressable
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingVertical: space[3],
-          }}
-        >
-          <Txt variant="bodyM">Private profile</Txt>
-          <Switch
-            value={privateProfile}
-            onValueChange={handleChangePrivacy}
-            trackColor={{ false: color.surface.card, true: color.action.primary }}
-          />
-        </Pressable>
-
-        <Txt variant="bodyS" color={color.text.secondary}>
-          Hide your profile from public leaderboards
-        </Txt>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card
-        style={{
-          marginBottom: space[8],
-          padding: space[4],
-          borderColor: color.action.danger,
-          borderWidth: 1,
-        }}
-      >
-        <Txt variant="headlineM" style={{ marginBottom: space[4], color: color.action.danger }}>
-          DANGER ZONE
-        </Txt>
-
-        <Button
-          title="Sign Out"
-          onPress={handleSignOut}
-          variant="danger"
-          size="md"
+        <Toggle
+          label="Someone goes live"
+          value={prefs.nLive}
+          onChange={(nLive) => setPrefs({ nLive })}
+        />
+        <Toggle
+          label="Court activity"
+          value={prefs.nCourt}
+          onChange={(nCourt) => setPrefs({ nCourt })}
         />
 
-        <Txt variant="bodyS" color={color.text.secondary} style={{ marginTop: space[3] }}>
-          Disconnect your wallet and return to login
-        </Txt>
-      </Card>
-    </Screen>
+        <Label style={{ marginTop: space.sectionGap }}>PRIVACY</Label>
+        <Toggle
+          label="Private profile"
+          hint="ONLY FOLLOWERS SEE YOUR FEED"
+          value={prefs.priv}
+          onChange={(priv) => setPrefs({ priv })}
+        />
+        <Toggle
+          label="Hide my amounts"
+          hint="GIVE ANONYMOUSLY"
+          value={prefs.hideAmt}
+          onChange={(hideAmt) => setPrefs({ hideAmt })}
+        />
+
+        <Label style={{ marginTop: space.sectionGap }}>SUPPORT</Label>
+        <Hairline />
+        <Pressable onPress={() => say("Help coming soon")} style={styles.row}>
+          <UiText weight="semi" style={{ fontSize: 14 }}>
+            Help
+          </UiText>
+        </Pressable>
+        <Hairline />
+        <Pressable onPress={() => say("Terms · Privacy")} style={styles.row}>
+          <UiText weight="semi" style={{ fontSize: 14 }}>
+            Terms & privacy
+          </UiText>
+        </Pressable>
+
+        <Pressable
+          onPress={async () => {
+            await disconnect()
+            router.replace("/(auth)/welcome")
+          }}
+          style={{ marginTop: 28, marginBottom: 8 }}
+        >
+          <Label style={{ textAlign: "center", color: "#E5484D", letterSpacing: 2 }}>SIGN OUT</Label>
+        </Pressable>
+        <Label style={{ textAlign: "center", marginBottom: 24 }}>TIN CUP · V1.0 · SECURED BY THIRDWEB</Label>
+      </ScrollView>
+    </VesselScreen>
   )
 }
+
+function Toggle({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  value: boolean
+  onChange: (v: boolean) => void
+}) {
+  const { v } = useVessel()
+  return (
+    <>
+      <Hairline />
+      <Row style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <UiText weight="semi" style={{ fontSize: 14 }}>
+            {label}
+          </UiText>
+          {hint ? <Label style={{ marginTop: 4 }}>{hint}</Label> : null}
+        </View>
+        <Switch
+          value={value}
+          onValueChange={onChange}
+          trackColor={{ false: v.line, true: v.ambfill }}
+          thumbColor="#fff"
+        />
+      </Row>
+    </>
+  )
+}
+
+const styles = StyleSheet.create({
+  row: { paddingVertical: space.rowPad, alignItems: "center" },
+  themeBtn: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: StyleSheet.hairlineWidth },
+})

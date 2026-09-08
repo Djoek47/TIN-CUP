@@ -1,112 +1,115 @@
-import { useEffect } from "react"
-import { View, StyleSheet, Image } from "react-native"
+import { useEffect, useState } from "react"
+import { View, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
-} from "react-native-reanimated"
-import { Txt } from "@/components/ui/Txt"
-import { useAuth } from "@/providers/AuthProvider"
-import { color, font, space } from "@/theme/tokens"
+import {
+  VesselScreen,
+  VesselCup,
+  PrimaryButton,
+  UiText,
+  Label,
+} from "@/components/vessel"
+import { useVessel } from "@/providers/VesselTheme"
+import { motion, space, pure } from "@/theme/vessel"
 
-const AnimatedImage = Animated.createAnimatedComponent(Image)
-
-/** S01 Splash — Make: coin drop → welcome / app */
+/** Splash — vessel fill, wordmark, ENTER THE ARENA */
 export default function Splash() {
   const router = useRouter()
-  const { loading, session, profile, configured } = useAuth()
-
-  const coinY = useSharedValue(-80)
-  const coinOpacity = useSharedValue(0)
-  const coinRotate = useSharedValue(-15)
-
-  useEffect(() => {
-    coinOpacity.value = withTiming(1, { duration: 280 })
-    coinY.value = withSequence(
-      withTiming(0, { duration: 560, easing: Easing.bezier(0.34, 1.56, 0.64, 1) }),
-      withTiming(-14, { duration: 140 }),
-      withTiming(0, { duration: 160 }),
-    )
-    coinRotate.value = withDelay(120, withTiming(0, { duration: 600 }))
-  }, [coinOpacity, coinRotate, coinY])
+  const { v } = useVessel()
+  const [fill, setFill] = useState(0.02)
+  const [showMark, setShowMark] = useState(false)
+  const [showCta, setShowCta] = useState(false)
 
   useEffect(() => {
-    if (loading) return
-    const t = setTimeout(() => {
-      if (!configured || !session) {
-        router.replace("/(auth)/welcome")
-      } else if (!profile?.onboarded) {
-        router.replace("/(onboarding)/choose-fate")
-      } else {
-        router.replace("/(app)")
+    const delay = 250
+    const duration = motion.fillMs
+    let raf = 0
+    const t0 = Date.now()
+
+    const tick = () => {
+      const elapsed = Date.now() - t0 - delay
+      if (elapsed < 0) {
+        raf = requestAnimationFrame(tick)
+        return
       }
-    }, 2800)
-    return () => clearTimeout(t)
-  }, [loading, session, profile, configured, router])
+      // liquid ease approximation of cubic-bezier(.22,1,.28,1)
+      const t = Math.min(1, elapsed / duration)
+      const eased = 1 - Math.pow(1 - t, 3.2)
+      setFill(0.02 + eased * 0.98)
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
 
-  const coinStyle = useAnimatedStyle(() => ({
-    opacity: coinOpacity.value,
-    transform: [{ translateY: coinY.value }, { rotate: `${coinRotate.value}deg` }],
-  }))
+    const markT = setTimeout(() => setShowMark(true), 1500)
+    const ctaT = setTimeout(() => setShowCta(true), 2200)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(markT)
+      clearTimeout(ctaT)
+    }
+  }, [])
 
   return (
-    <View style={styles.container} accessibilityLabel="Tin Cup, loading">
-      <AnimatedImage
-        source={require("@/assets/art/eagle-coin.png")}
-        style={[styles.coin, coinStyle]}
-        resizeMode="contain"
-      />
-      <Txt
-        style={{
-          fontFamily: font.display,
-          fontSize: 50,
-          color: color.action.primary,
-          letterSpacing: 2.5,
-          lineHeight: 54,
-          textShadowColor: "rgba(245,179,43,0.4)",
-          textShadowRadius: 50,
-          textShadowOffset: { width: 0, height: 0 },
-        }}
-      >
-        TIN CUP
-      </Txt>
-      <Txt
-        style={{
-          fontFamily: font.headlineBlack,
-          fontSize: 10,
-          letterSpacing: 4.8,
-          color: color.text.tertiary,
-          textTransform: "uppercase",
-          marginTop: 10,
-        }}
-      >
-        Perdition Gulch
-      </Txt>
-      <Txt
-        style={{
-          position: "absolute",
-          bottom: 36,
-          fontFamily: font.body,
-          fontSize: 11,
-          color: color.text.tertiary,
-        }}
-      >
-        v1.0 · Season 1: Gold Rush
-      </Txt>
-    </View>
+    <VesselScreen nav={false}>
+      <View style={styles.root}>
+        <View style={styles.hero}>
+          <VesselCup fill={fill} width={92} height={148} />
+          {showMark ? (
+            <View style={styles.markBlock}>
+              <UiText
+                weight="black"
+                style={[
+                  styles.wordmark,
+                  { color: v.ink, letterSpacing: v.track * 10 },
+                ]}
+              >
+                TIN CUP
+              </UiText>
+              <Label style={{ color: pure.amber, letterSpacing: 3, marginTop: 10 }}>
+                LIVE GENEROSITY. REAL STORIES.
+              </Label>
+            </View>
+          ) : (
+            <View style={{ height: 72 }} />
+          )}
+        </View>
+
+        <View style={styles.footer}>
+          {showCta ? (
+            <PrimaryButton
+              title="ENTER THE ARENA"
+              tone="amb"
+              onPress={() => router.push("/(auth)/welcome")}
+            />
+          ) : (
+            <View style={{ height: space.btnH }} />
+          )}
+          <Label style={{ textAlign: "center", marginTop: 14, color: v.faint }}>
+            Not a charity · Entertainment · Culture
+          </Label>
+        </View>
+      </View>
+    </VesselScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: color.bg.canvas,
+    justifyContent: "space-between",
+    paddingBottom: 8,
+  },
+  hero: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: 28,
   },
-  coin: { width: 72, height: 72, marginBottom: space[5] + 4 },
+  markBlock: { alignItems: "center" },
+  wordmark: {
+    fontSize: 33,
+    letterSpacing: 4,
+  },
+  footer: {
+    paddingBottom: 8,
+  },
 })

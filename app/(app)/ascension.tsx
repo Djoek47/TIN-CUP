@@ -1,169 +1,93 @@
-import { useState } from "react"
-import { View, ScrollView, Pressable, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { View, StyleSheet, ScrollView } from "react-native"
 import { useRouter } from "expo-router"
-import { GoldButton, Ico } from "@/components/gds"
-import { Txt } from "@/components/ui/Txt"
-import { glass } from "@/theme/glass"
-import { color, font } from "@/theme/tokens"
+import {
+  VesselScreen,
+  ScreenHeader,
+  PrimaryButton,
+  UiText,
+  Label,
+  Hairline,
+  Row,
+  MonoNum,
+} from "@/components/vessel"
+import { useVessel } from "@/providers/VesselTheme"
+import { pure, space } from "@/theme/vessel"
 
-const BENEFITS: [string, string][] = [
-  ["💰", "Rain gold on any Vagrant in Perdition Gulch"],
-  ["⚔️", "Post bounties and set absurd challenges"],
-  ["🏰", "Run your own private Court with worshippers"],
-  ["👑", "Unlock finery — no more rags, ever"],
-  ["🏆", "Climb the Lord titles ladder to the Monarch's Court"],
-  ["🎭", "Enter Lord-vs-Lord generosity battles in live streams"],
-]
+const CHANGES = [
+  { n: "01", title: "Set bounties", body: "Name the challenge. Name the price." },
+  { n: "02", title: "Run a Court", body: "Your own room, your own regulars." },
+  { n: "03", title: "Gold in every chat", body: "They see you coming." },
+  { n: "04", title: "Priority everywhere", body: "Feed, leaderboard, gift rail." },
+] as const
 
-/** S27 Ascension — Make AscensionScreen */
-export default function AscensionScreen() {
+/** Ascension — Lord pitch scroll → PONR */
+export default function Ascension() {
   const router = useRouter()
-  const insets = useSafeAreaInsets()
-  const [scrollPct, setScrollPct] = useState(0)
-
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-    const max = contentSize.height - layoutMeasurement.height
-    setScrollPct(max > 0 ? Math.min(1, contentOffset.y / max) : 0)
-  }
+  const { v } = useVessel()
 
   return (
-    <View style={styles.root}>
+    <VesselScreen nav={false}>
+      <ScreenHeader title="ASCENSION" onBack={() => router.back()} />
       <ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <LinearGradient
-            colors={[color.bg.surface, color.bg.canvas]}
-            style={[StyleSheet.absoluteFill, { opacity: 1 - scrollPct, alignItems: "center", justifyContent: "center" }]}
-          >
-            <Txt style={{ fontSize: 84, opacity: 0.6 }}>🤠</Txt>
-          </LinearGradient>
-          <LinearGradient
-            colors={["rgba(36,43,54,0.9)", "rgba(18,22,31,0.9)"]}
-            style={[StyleSheet.absoluteFill, { opacity: scrollPct, alignItems: "center", justifyContent: "center" }]}
-          >
-            <Txt style={{ fontSize: 84 }}>🎩</Txt>
-          </LinearGradient>
-          <View style={[styles.backWrap, { paddingTop: insets.top + 12 }]}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
-              <Ico.Back c={color.text.primary} s={18} />
-            </Pressable>
-          </View>
-        </View>
+        <Label style={{ color: pure.lime, marginBottom: 18 }}>YOU ARE A VAGRANT</Label>
 
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-          <Txt style={styles.overline}>ASCENSION</Txt>
-          <Txt style={styles.headline}>
-            Rise to <Txt style={styles.lordship}>Lordship</Txt>
-          </Txt>
+        <UiText weight="black" style={{ fontSize: 42, color: pure.amber, letterSpacing: 1 }}>
+          LORD
+        </UiText>
+        <UiText
+          weight="reg"
+          style={{ fontSize: 14, color: v.ink, lineHeight: 22, marginTop: 12, marginBottom: 28 }}
+        >
+          One payment. No subscription, no renewal, no way down. The cup stays full for as long as
+          the app exists.
+        </UiText>
 
-          <View style={{ marginBottom: 24 }}>
-            {BENEFITS.map(([icon, text]) => (
-              <View key={text} style={styles.benefit}>
-                <Txt style={{ fontSize: 20, width: 28 }}>{icon}</Txt>
-                <Txt style={{ fontFamily: font.body, fontSize: 14, color: color.text.primary, flex: 1 }}>
-                  {text}
-                </Txt>
+        <Label style={{ color: v.faint, marginBottom: 4 }}>WHAT CHANGES</Label>
+        {CHANGES.map((c, i) => (
+          <View key={c.n}>
+            {i === 0 ? <Hairline /> : null}
+            <Row style={styles.row}>
+              <MonoNum style={{ fontSize: 12, color: v.faint, width: 28 }}>{c.n}</MonoNum>
+              <View style={{ flex: 1 }}>
+                <UiText weight="bold" style={{ fontSize: 14, color: v.ink }}>
+                  {c.title}
+                </UiText>
+                <UiText weight="reg" style={{ fontSize: 12, color: v.dim, marginTop: 3 }}>
+                  {c.body}
+                </UiText>
               </View>
-            ))}
+            </Row>
+            <Hairline />
           </View>
+        ))}
 
-          <View style={[styles.stake, glass.gold]}>
-            <Txt style={styles.stakeLabel}>THE STAKE</Txt>
-            <Txt style={styles.stakeAmt}>$100</Txt>
-            <Txt style={styles.stakeSub}>{"One-time deposit · 1% Monarch's cut on arrival"}</Txt>
-          </View>
-
-          <GoldButton
-            title="Begin the Ascension"
+        <View style={styles.footer}>
+          <PrimaryButton
+            title="ASCEND · $100 ONCE"
+            tone="amb"
             onPress={() => router.push("/(app)/ponr")}
           />
-          <Txt style={styles.foot}>One-time. Permanent. No going back.</Txt>
+          <Label style={{ textAlign: "center", marginTop: 14, color: v.faint }}>
+            ONE TIME · NO REFUND · NO WAY BACK
+          </Label>
         </View>
       </ScrollView>
-    </View>
+    </VesselScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg.canvas },
-  hero: { height: 280, overflow: "hidden" },
-  backWrap: { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: 16 },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
+  scroll: {
+    flexGrow: 1,
+    paddingBottom: 8,
   },
-  overline: {
-    fontFamily: font.headlineBlack,
-    fontSize: 10,
-    letterSpacing: 1.8,
-    textTransform: "uppercase",
-    color: color.action.primary,
-    marginBottom: 8,
+  row: {
+    alignItems: "flex-start",
   },
-  headline: {
-    fontFamily: font.display,
-    fontSize: 32,
-    color: color.text.primary,
-    lineHeight: 36,
-    marginBottom: 20,
-    letterSpacing: 0.4,
-  },
-  lordship: {
-    fontFamily: font.display,
-    fontSize: 32,
-    color: color.action.primary,
-  },
-  benefit: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
-  },
-  stake: {
-    borderRadius: 18,
-    padding: 22,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  stakeLabel: {
-    fontFamily: font.headlineBlack,
-    fontSize: 10,
-    letterSpacing: 1.8,
-    textTransform: "uppercase",
-    color: color.text.tertiary,
-    marginBottom: 10,
-  },
-  stakeAmt: {
-    fontFamily: font.display,
-    fontSize: 44,
-    color: color.action.primary,
-  },
-  stakeSub: {
-    fontFamily: font.body,
-    fontSize: 13,
-    color: color.text.secondary,
-    marginTop: 4,
-  },
-  foot: {
-    textAlign: "center",
-    marginTop: 10,
-    fontFamily: font.body,
-    fontSize: 12,
-    color: color.text.tertiary,
+  footer: {
+    marginTop: space.sectionGap,
   },
 })
