@@ -13,7 +13,9 @@
     "submit:ios": "eas submit -p ios --profile production",
     "eas:whoami": "bash scripts/eas-with-token.sh whoami",
     "eas:build:ios": "bash scripts/eas-with-token.sh build",
-    "eas:submit:ios": "bash scripts/eas-with-token.sh submit"
+    "eas:submit:ios": "bash scripts/eas-with-token.sh submit",
+    "update:preview": "eas update --branch preview --message \"Vessel OTA preview\" --non-interactive",
+    "update:prod": "eas update --branch production --message \"Vessel OTA\" --non-interactive"
   },
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",
@@ -51,6 +53,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
+    "expo-updates": "^57.0.21",
     "expo-web-browser": "~15.0.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",

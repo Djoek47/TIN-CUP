@@ -1,42 +1,29 @@
 # Tin Cup — The Vessel (Expo)
 
-Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Design: money is light in glass. Amber = given. Lime = received.
+Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber = given. Lime = received.
 
-## Tonight TestFlight MVP
+## Try it now (no Apple distribution)
+
+**OTA update published** to branch `preview` (SDK 54):
+
+https://expo.dev/accounts/djoek47/projects/tin-cup/updates/b94a205f-6b37-4166-bd96-a42dd2b53731
+
+Or run a live tunnel:
 
 ```bash
 npm install --legacy-peer-deps
-cp .env.example .env.local
 npm run dev
 ```
 
-Flow: Splash → Get Started → Connect → Verify → Choose Fate → Home  
-Mock wallet is default (`TEST WALLET · FAKE MONEY`).
+Open in **Expo Go (SDK 54)** via QR / tunnel URL.
 
-### TestFlight (you run locally with Apple creds)
+See [docs/OTA.md](docs/OTA.md).
 
-```bash
-npm i -g eas-cli
-eas login
-eas build:configure
-eas build -p ios --profile production
-eas submit -p ios --profile production
-```
+## Money
+Default mock wallet: `TEST WALLET · FAKE MONEY`. Optional Base Sepolia when `EXPO_PUBLIC_MONEY_MODE=testnet` + thirdweb client id.
 
-Set `submit.production.ios.ascAppId` in `eas.json` to your App Store Connect app id.
+## Apple TestFlight
+Deferred until you create distribution credentials. Then follow [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md).
 
-### Env
-
-| Var | Purpose |
-|---|---|
-| `EXPO_PUBLIC_MONEY_MODE` | `mock` (default) or `testnet` |
-| `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | Enables testnet rail (Base Sepolia) |
-| `EXPO_PUBLIC_USDT_ADDRESS` / `EXPO_PUBLIC_TREASURY_ADDRESS` | Test USDC + Lord stake |
-| `EXPO_PUBLIC_LIVEKIT_URL` / `EXPO_PUBLIC_LIVEKIT_TOKEN_URL` | Live video; camera fallback if unset |
-
-Design source: `docs/redesign/`
-
-### Scripts
-
-- `npm run dev` — Expo tunnel
-- `npm run build:ios` — EAS production iOS build
+## Stack
+Expo Router 54 · Vessel dual-caste UI · mock wallet · EAS Update · camera/LiveKit fallback
