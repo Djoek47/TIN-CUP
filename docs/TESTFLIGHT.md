@@ -1,4 +1,6 @@
-# Obol → Apple TestFlight
+# 0bol → Apple TestFlight
+
+App Store Connect name: **0bol** · In-app brand: **OBOL** · Bundle ID: `com.obol.app`
 
 Expo Go is fine for **mock UI** smoke tests. Stripe + thirdweb need a **native iOS binary**.
 
@@ -14,14 +16,12 @@ npx expo prebuild --platform ios --clean
 3. Open in Xcode:
 
 ```bash
-open ios/Obol.xcworkspace
+open ios/*.xcworkspace
 ```
 
-   If the workspace name differs, open `ios/*.xcworkspace`.
-
-4. Select your Team, set bundle id `com.obol.app`, bump build number.
+4. Select your Team, set bundle id `com.obol.app`, confirm display name **0bol**, bump build number.
 5. **Product → Archive**, then **Distribute App → App Store Connect → Upload**.
-6. In App Store Connect → TestFlight, add internal testers.
+6. In App Store Connect → TestFlight (app **0bol**), add internal testers.
 
 ## App icon
 

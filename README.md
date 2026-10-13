@@ -6,6 +6,12 @@ Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber
 
 ## Brand
 
+| Surface | Name |
+|---------|------|
+| App Store / home screen | **0bol** |
+| In-app wordmark | **OBOL** |
+| Bundle ID | `com.obol.app` |
+
 Unified coin mark — liquid surface locked at **y=56** across all modes (day/night, vagrant/lord, arrival/handoff/crossing). Assets live in [`assets/brand/obol/`](assets/brand/obol/).
 
 ## Stack
