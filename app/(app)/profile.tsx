@@ -28,9 +28,14 @@ export default function ProfileScreen() {
       <ScreenHeader
         title="Profile"
         right={
-          <Pressable onPress={() => router.push("/(app)/settings")}>
-            <Label>⚙</Label>
-          </Pressable>
+          <Row style={{ gap: 14 }}>
+            <Pressable onPress={() => router.push("/(app)/notifications" as any)}>
+              <Label>◉</Label>
+            </Pressable>
+            <Pressable onPress={() => router.push("/(app)/settings")}>
+              <Label>⚙</Label>
+            </Pressable>
+          </Row>
         }
       />
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -104,6 +109,30 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
+        <Row style={{ marginTop: space.sectionGap, gap: 12 }}>
+          {!isLord ? (
+            <Pressable
+              onPress={() => router.push("/(app)/compose" as any)}
+              style={[styles.quick, { borderColor: v.line, borderRadius: v.radPill, flex: 1 }]}
+            >
+              <Label style={{ color: v.lim }}>NEW BEG</Label>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => router.push("/(app)/send")}
+              style={[styles.quick, { borderColor: v.line, borderRadius: v.radPill, flex: 1 }]}
+            >
+              <Label style={{ color: v.amb }}>POUR GOLD</Label>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => router.push("/(app)/edit-profile")}
+            style={[styles.quick, { borderColor: v.line, borderRadius: v.radPill, flex: 1 }]}
+          >
+            <Label>EDIT</Label>
+          </Pressable>
+        </Row>
+
         <Label style={{ marginTop: space.sectionGap }}>TOP SUPPORTER</Label>
         <Hairline />
         <Row style={styles.row}>
@@ -148,4 +177,9 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   bar: { height: 3, borderRadius: 2, overflow: "hidden" },
   row: { paddingVertical: space.rowPad, alignItems: "center" },
+  quick: {
+    alignItems: "center",
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
 })

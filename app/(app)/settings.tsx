@@ -1,4 +1,4 @@
-import { ScrollView, View, Pressable, Switch, StyleSheet } from "react-native"
+import { ScrollView, View, Pressable, Switch, StyleSheet, Alert, Linking } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -10,12 +10,42 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { DEMO_ACCOUNTS, type DemoRole } from "@/lib/demo-accounts"
 import { space } from "@/theme/vessel"
 
 export default function SettingsScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const { user, caste, theme, prefs, setTheme, setPrefs, disconnect, say, moneyBadge } = useApp()
+  const {
+    user,
+    caste,
+    theme,
+    prefs,
+    setTheme,
+    setPrefs,
+    disconnect,
+    connectDemo,
+    demoRole,
+    say,
+    moneyBadge,
+  } = useApp()
+
+  const switchDemo = (role: DemoRole) => {
+    Alert.alert(
+      `Switch to ${DEMO_ACCOUNTS[role].label}?`,
+      "Loads seeded mock gold for that identity. Local session replaced.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Switch",
+          onPress: async () => {
+            await connectDemo(role)
+            router.replace("/(app)")
+          },
+        },
+      ],
+    )
+  }
 
   return (
     <VesselScreen nav={false}>
@@ -133,15 +163,91 @@ export default function SettingsScreen() {
           onChange={(hideAmt) => setPrefs({ hideAmt })}
         />
 
+        <Label style={{ marginTop: space.sectionGap }}>INBOX & CREATION</Label>
+        <Hairline />
+        <Pressable onPress={() => router.push("/(app)/notifications" as any)} style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Notifications
+          </UiText>
+          <Label style={{ color: v.amb }}>→</Label>
+        </Pressable>
+        <Hairline />
+        <Pressable onPress={() => router.push("/(app)/compose" as any)} style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Compose beg
+          </UiText>
+          <Label style={{ color: v.amb }}>→</Label>
+        </Pressable>
+        <Hairline />
+        <Pressable onPress={() => router.push("/(app)/activity" as any)} style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Activity ledger
+          </UiText>
+          <Label style={{ color: v.amb }}>→</Label>
+        </Pressable>
+
+        <Label style={{ marginTop: space.sectionGap }}>MOCK QA ACCOUNTS</Label>
+        <Hairline />
+        <Pressable
+          onPress={() => switchDemo("vagrant")}
+          style={styles.row}
+          disabled={demoRole === "vagrant"}
+        >
+          <View style={{ flex: 1 }}>
+            <UiText weight="semi" style={{ fontSize: 14 }}>
+              Load Test Vagrant
+            </UiText>
+            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.vagrant.user.handle} · peasant UI</Label>
+          </View>
+          <Label style={{ color: demoRole === "vagrant" ? v.lim : v.amb }}>
+            {demoRole === "vagrant" ? "ACTIVE" : "SWITCH"}
+          </Label>
+        </Pressable>
+        <Hairline />
+        <Pressable onPress={() => switchDemo("lord")} style={styles.row} disabled={demoRole === "lord"}>
+          <View style={{ flex: 1 }}>
+            <UiText weight="semi" style={{ fontSize: 14 }}>
+              Load Test Lord
+            </UiText>
+            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.lord.user.handle} · lord UI</Label>
+          </View>
+          <Label style={{ color: demoRole === "lord" ? v.amb : v.lim }}>
+            {demoRole === "lord" ? "ACTIVE" : "SWITCH"}
+          </Label>
+        </Pressable>
+
         <Label style={{ marginTop: space.sectionGap }}>SUPPORT</Label>
         <Hairline />
-        <Pressable onPress={() => say("Help coming soon")} style={styles.row}>
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "0bol help",
+              "Vagrant: go live, enter challenges, cash out, ascend.\nLord: fund bounties, pour gifts.\nMock gold first — Stripe when keys are set.\nSwitch accounts under Mock QA.",
+            )
+          }
+          style={styles.row}
+        >
           <UiText weight="semi" style={{ fontSize: 14 }}>
             Help
           </UiText>
         </Pressable>
         <Hairline />
-        <Pressable onPress={() => say("Terms · Privacy")} style={styles.row}>
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "Terms & privacy",
+              "TestFlight MVP — mock escrow only. Reference gold is not physical metal. Contact the project owner for production terms.",
+              [
+                { text: "OK" },
+                {
+                  text: "Open README",
+                  onPress: () => Linking.openURL("https://github.com/Djoek47/TIN-CUP").catch(() => say("Link failed")),
+                },
+              ],
+            )
+          }
+          style={styles.row}
+        >
           <UiText weight="semi" style={{ fontSize: 14 }}>
             Terms & privacy
           </UiText>
@@ -157,7 +263,7 @@ export default function SettingsScreen() {
           <Label style={{ textAlign: "center", color: "#E5484D", letterSpacing: 2 }}>SIGN OUT</Label>
         </Pressable>
         <Label style={{ textAlign: "center", marginBottom: 8 }}>{moneyBadge}</Label>
-        <Label style={{ textAlign: "center", marginBottom: 24 }}>OBOL · V1.0 · A COIN FOR THE CROSSING</Label>
+        <Label style={{ textAlign: "center", marginBottom: 24 }}>0bol · V1.0 · A COIN FOR THE CROSSING</Label>
       </ScrollView>
     </VesselScreen>
   )

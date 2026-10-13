@@ -51,7 +51,7 @@ export default function LiveScreen() {
 
   const onGift = async (amount: number) => {
     try {
-      await gift("@luna", amount)
+      await gift("@dusty", amount)
       setRaised((r) => r + amount)
       setBurst(amount)
       say(`$${amount} poured`)

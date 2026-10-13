@@ -23,6 +23,7 @@ export default function BroadcastScreen() {
   const [raised, setRaised] = useState(0)
   const goal = 2000
   const [chat, setChat] = useState<{ who: string; t: string }[]>([])
+  const [tools, setTools] = useState({ MIC: true, CAM: true, FLIP: false, FILTER: false })
 
   useEffect(() => {
     const tick = setInterval(() => {
@@ -77,15 +78,31 @@ export default function BroadcastScreen() {
         </View>
 
         <Row style={[styles.tools, { paddingHorizontal: space.screenPad }]}>
-          {(["MIC", "CAM", "FLIP", "FILTER"] as const).map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => say(`${t} toggled`)}
-              style={[styles.tool, { borderColor: v.line, borderRadius: v.radPill }]}
-            >
-              <Label>{t}</Label>
-            </Pressable>
-          ))}
+          {(["MIC", "CAM", "FLIP", "FILTER"] as const).map((t) => {
+            const on = tools[t]
+            return (
+              <Pressable
+                key={t}
+                onPress={() => {
+                  setTools((prev) => {
+                    const next = { ...prev, [t]: !prev[t] }
+                    say(`${t} ${next[t] ? "on" : "off"}`)
+                    return next
+                  })
+                }}
+                style={[
+                  styles.tool,
+                  {
+                    borderColor: on ? v.lim : v.line,
+                    borderRadius: v.radPill,
+                    backgroundColor: on ? "rgba(196,240,0,0.12)" : "transparent",
+                  },
+                ]}
+              >
+                <Label style={{ color: on ? v.lim : v.dim }}>{t}</Label>
+              </Pressable>
+            )
+          })}
         </Row>
       </View>
     </VesselScreen>

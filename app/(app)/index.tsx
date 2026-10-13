@@ -57,10 +57,13 @@ export default function HomeScreen() {
             </View>
           </Row>
           <Row style={{ gap: 16 }}>
+            <Pressable onPress={() => router.push("/(app)/compose" as any)}>
+              <Label style={{ color: v.dim, fontSize: 16 }}>+</Label>
+            </Pressable>
             <Pressable onPress={() => router.push("/(app)/arena" as any)}>
               <Label style={{ color: v.dim, fontSize: 16 }}>⌘</Label>
             </Pressable>
-            <Pressable onPress={() => router.push("/(app)/activity" as any)}>
+            <Pressable onPress={() => router.push("/(app)/notifications" as any)}>
               <Label style={{ color: v.dim, fontSize: 16 }}>◉</Label>
             </Pressable>
           </Row>
@@ -76,7 +79,14 @@ export default function HomeScreen() {
           ))}
         </Row>
 
-        <Pressable onPress={() => router.push("/(app)/live")}>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/beg-details",
+              params: { name: H.n, title: H.t, story: H.s, raised: String(H.r), goal: String(H.g) },
+            } as any)
+          }
+        >
           <View style={[styles.hero, { borderRadius: v.rad }]}>
             <ImageSlot label={`${H.n} · live portrait`} height={360} radius={v.rad} />
             <View style={styles.heroScrim} pointerEvents="none" />
@@ -144,7 +154,7 @@ export default function HomeScreen() {
         <View style={{ marginTop: space.sectionGap }}>
           <Label style={{ marginBottom: 4 }}>Activity</Label>
           {activity.map((e) => (
-            <View key={e.id}>
+            <Pressable key={e.id} onPress={() => router.push("/(app)/wallet")}>
               <Hairline />
               <Row style={styles.actRow}>
                 <Label style={{ color: e.dir === "in" ? v.lim : v.amb, width: 16 }}>
@@ -161,7 +171,7 @@ export default function HomeScreen() {
                   {fmtCompactUsd(e.amount)}
                 </MonoNum>
               </Row>
-            </View>
+            </Pressable>
           ))}
         </View>
 

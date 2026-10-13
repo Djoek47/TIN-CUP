@@ -1,204 +1,119 @@
 import { useMemo, useState } from "react"
-import { View, ScrollView, Pressable, StyleSheet, Alert } from "react-native"
+import { View, StyleSheet, Alert, Pressable } from "react-native"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import { TopAppBar, TitleChip, GoalBar, GiverStack, Ico } from "@/components/gds"
-import { Txt } from "@/components/ui/Txt"
-import { BEGS } from "@/lib/make-data"
-import { useAuth } from "@/providers/AuthProvider"
-import { MONEY_FAIL_COPY } from "@/lib/thirdweb"
-import { glass } from "@/theme/glass"
-import { color, font } from "@/theme/tokens"
+import {
+  VesselScreen,
+  ScreenHeader,
+  PrimaryButton,
+  Label,
+  UiText,
+  MonoNum,
+  Row,
+  Hairline,
+  CashSlider,
+  ImageSlot,
+} from "@/components/vessel"
+import { useApp } from "@/providers/AppState"
+import { useVessel } from "@/providers/VesselTheme"
+import { space } from "@/theme/vessel"
 
-const GIFTS = [
-  { label: "Nickel Toss", emoji: "🪙", amt: 5 },
-  { label: "25 coins", emoji: "💰", amt: 25 },
-  { label: "100 coins", emoji: "💥", amt: 100 },
-]
+const PRESETS = [10, 25, 50, 100]
 
-/** S30 Beg Detail — Make BegDetailScreen */
+/** Beg detail — gift with mock AppState gold */
 export default function BegDetailsScreen() {
   const router = useRouter()
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const { giftUsdt } = useAuth()
-  const [reacted, setReacted] = useState(false)
+  const { v } = useVessel()
+  const { gift, say, caste } = useApp()
+  const params = useLocalSearchParams<{
+    name?: string
+    title?: string
+    story?: string
+    raised?: string
+    goal?: string
+  }>()
+  const name = params.name || "Luna"
+  const title = params.title || "Rent is due."
+  const story = params.story || "Help a girl breathe this month."
+  const raised = Number(params.raised || 1235)
+  const goal = Number(params.goal || 2000)
+  const [amount, setAmount] = useState(25)
+  const [busy, setBusy] = useState(false)
+  const pct = useMemo(() => Math.min(100, Math.round((raised / goal) * 100)), [raised, goal])
+  const handle = `@${name.toLowerCase()}`
 
-  const beg = useMemo(() => {
-    const n = Number(id)
-    return BEGS.find((b) => b.id === n) ?? BEGS[0]
-  }, [id])
-
-  const handleReact = () => {
-    setReacted((r) => !r)
-    Alert.alert(reacted ? "Reaction removed." : "🤠 Reacted!")
-  }
-
-  const handleShare = () => Alert.alert("Beg link copied to clipboard ↗")
-
-  const handleGift = async (amt: number) => {
+  const pour = async () => {
+    if (busy) return
+    setBusy(true)
     try {
-      await giftUsdt("0x0000000000000000000000000000000000000001", amt * 100)
-      Alert.alert(`🪙 Tossing ${amt} coins to ${beg.handle}...`)
+      await gift(handle, amount, title)
+      Alert.alert("Gold poured", `${amount} → ${handle}`)
+      router.replace("/(app)/wallet")
     } catch (e: any) {
-      Alert.alert("Error", e?.message || MONEY_FAIL_COPY)
+      say(e?.message || "Gift failed")
+    } finally {
+      setBusy(false)
     }
   }
 
   return (
-    <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <TopAppBar title={beg.handle} overline="BEG DETAIL" onBack={() => router.back()} />
+    <VesselScreen nav={false}>
+      <ScreenHeader title="Beg" onBack={() => router.back()} />
+      <ImageSlot label={`${name} · beg`} height={220} radius={v.rad} />
+      <Label style={{ marginTop: 16 }}>{name.toUpperCase()} · LIVE BEG</Label>
+      <UiText weight="black" style={{ fontSize: 26, marginTop: 8 }}>
+        {title}
+      </UiText>
+      <UiText weight="reg" style={{ color: v.dim, marginTop: 8, lineHeight: 20 }}>
+        {story}
+      </UiText>
 
-        <View style={[styles.hero, glass.card]}>
-          <Txt style={{ fontSize: 72 }}>🤠</Txt>
-          <View style={styles.handleRow}>
-            <Txt
-              style={{
-                fontFamily: font.headlineBold,
-                fontSize: 14,
-                color: color.text.primary,
-              }}
-            >
-              {beg.handle}
-            </Txt>
-            <TitleChip title={beg.title} />
-          </View>
+      <Row style={{ marginTop: 20, justifyContent: "space-between" }}>
+        <View>
+          <Label>RAISED</Label>
+          <MonoNum style={{ color: v.lim, fontSize: 22, marginTop: 4 }}>${raised}</MonoNum>
         </View>
-
-        <View style={{ paddingHorizontal: 16 }}>
-          <Txt style={styles.pitch}>{beg.beg}</Txt>
-
-          {beg.goal ? (
-            <View style={{ marginBottom: 16 }}>
-              <GoalBar current={beg.coins} goal={beg.goal} />
-              <View style={{ marginTop: 10 }}>
-                <GiverStack count={beg.givers} />
-              </View>
-            </View>
-          ) : (
-            <View style={{ marginBottom: 16 }}>
-              <GiverStack count={beg.givers} />
-            </View>
-          )}
-
-          <View style={styles.giftRow}>
-            {GIFTS.map((g) => (
-              <Pressable
-                key={g.label}
-                onPress={() => handleGift(g.amt)}
-                style={[
-                  styles.giftBtn,
-                  g.amt === 100 ? glass.gold : glass.card,
-                  g.amt === 100 && { borderColor: "rgba(245,179,43,0.3)" },
-                ]}
-              >
-                <Txt style={{ fontSize: 18 }}>{g.emoji}</Txt>
-                <Txt
-                  style={{
-                    fontFamily: font.mono,
-                    fontSize: 9,
-                    color: g.amt === 100 ? color.action.primary : color.text.secondary,
-                  }}
-                >
-                  {g.label}
-                </Txt>
-              </Pressable>
-            ))}
-            <Pressable
-              onPress={() => router.push("/(app)/wallet")}
-              style={[styles.giftBtn, glass.card]}
-            >
-              <Txt style={{ fontSize: 18 }}>✏️</Txt>
-              <Txt
-                style={{
-                  fontFamily: font.mono,
-                  fontSize: 9,
-                  color: color.text.secondary,
-                }}
-              >
-                Custom
-              </Txt>
-            </Pressable>
-          </View>
-
-          <View style={styles.actionRow}>
-            <Pressable
-              onPress={handleReact}
-              style={[
-                styles.actionBtn,
-                reacted ? glass.gold : glass.card,
-                reacted && { borderColor: "rgba(245,179,43,0.3)" },
-              ]}
-            >
-              <Txt
-                style={{
-                  fontFamily: font.headlineBold,
-                  fontSize: 13,
-                  color: reacted ? color.action.primary : color.text.secondary,
-                }}
-              >
-                {reacted ? "🤠 Reacted" : "React 🤠"}
-              </Txt>
-            </Pressable>
-            <Pressable onPress={handleShare} style={[styles.actionBtn, glass.card]}>
-              <Ico.Share s={14} c={color.text.secondary} />
-              <Txt
-                style={{
-                  fontFamily: font.headlineBold,
-                  fontSize: 13,
-                  color: color.text.secondary,
-                }}
-              >
-                Share
-              </Txt>
-            </Pressable>
-          </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Label>GOAL</Label>
+          <MonoNum style={{ fontSize: 22, marginTop: 4 }}>${goal}</MonoNum>
         </View>
-      </ScrollView>
-    </View>
+      </Row>
+      <View style={[styles.track, { backgroundColor: v.line, marginTop: 10 }]}>
+        <View style={{ width: `${pct}%`, height: "100%", backgroundColor: v.limfill }} />
+      </View>
+
+      <Hairline style={{ marginTop: space.sectionGap }} />
+      <Label style={{ marginTop: 12 }}>POUR {caste === "lord" ? "(LORD)" : "(ANYONE)"}</Label>
+      <MonoNum style={{ fontSize: 32, marginTop: 6 }}>${amount}</MonoNum>
+      <CashSlider value={amount} onChange={setAmount} max={500} step={5} />
+      <Row style={{ gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+        {PRESETS.map((p) => (
+          <Pressable
+            key={p}
+            onPress={() => setAmount(p)}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: amount === p ? v.amb : v.line,
+              borderRadius: v.radPill,
+            }}
+          >
+            <Label style={{ color: amount === p ? v.amb : v.dim }}>${p}</Label>
+          </Pressable>
+        ))}
+      </Row>
+
+      <View style={{ flex: 1, minHeight: 24 }} />
+      <PrimaryButton title={`GIFT ${handle}`} onPress={pour} disabled={busy || amount <= 0} />
+      <View style={{ height: 10 }} />
+      <PrimaryButton title="WATCH LIVE" tone="lim" onPress={() => router.push("/(app)/live")} />
+      <Label style={{ textAlign: "center", marginTop: 10, marginBottom: 8 }}>
+        Mock escrow · no real card charge
+      </Label>
+    </VesselScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg.canvas },
-  hero: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    height: 196,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  handleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 6,
-  },
-  pitch: {
-    fontFamily: font.headlineBlack,
-    fontSize: 20,
-    color: color.text.primary,
-    lineHeight: 26,
-    marginBottom: 14,
-  },
-  giftRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  giftBtn: {
-    flex: 1,
-    height: 58,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-  },
-  actionRow: { flexDirection: "row", gap: 8 },
-  actionBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
+  track: { height: 4, borderRadius: 2, overflow: "hidden" },
 })

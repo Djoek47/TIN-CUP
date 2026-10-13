@@ -34,8 +34,8 @@ async function main() {
   const stripePk = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
   const stripeOk = stripePk.startsWith("pk_") && !stripePk.includes("your_")
   const out = {
-    EXPO_PUBLIC_MONEY_MODE:
-      process.env.EXPO_PUBLIC_MONEY_MODE || (stripeOk ? "auto" : "thirdweb"),
+    // Default mock for dual-caste QA; set EXPO_PUBLIC_MONEY_MODE=auto when Stripe keys land
+    EXPO_PUBLIC_MONEY_MODE: process.env.EXPO_PUBLIC_MONEY_MODE || "mock",
     EXPO_PUBLIC_THIRDWEB_CLIENT_ID: process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID || "",
     EXPO_PUBLIC_THIRDWEB_CHAIN: process.env.EXPO_PUBLIC_THIRDWEB_CHAIN || "base-sepolia",
     EXPO_PUBLIC_XAU_USD: process.env.EXPO_PUBLIC_XAU_USD || "2650",

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View, Pressable, StyleSheet, ScrollView } from "react-native"
+import { View, Pressable, StyleSheet, ScrollView, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -23,42 +23,72 @@ const ARENAS = [
     t: "Spicy Truth",
     s: "Eat a ghost pepper in 60 seconds.",
     r: "$250",
+    fund: 250,
+    entry: 5,
     c: "02:15:42",
     vagrant: "ENTER CHALLENGE",
     lord: "FUND THIS BOUNTY",
+    challengeId: "1",
   },
   {
     k: "ROULETTE · SPINS EVERY 5 MIN",
     t: "Blind Give",
     s: "Random stranger. Random amount. No takebacks.",
     r: "$25–$500",
+    fund: 100,
+    entry: 5,
     c: "00:04:18",
     vagrant: "ENTER CHALLENGE",
     lord: "FUND THIS BOUNTY",
+    challengeId: "2",
   },
   {
     k: "EVENT · STARTS SATURDAY",
     t: "Midnight Marathon",
     s: "Six hours live. Highest total takes the pot.",
     r: "$5,000",
+    fund: 500,
+    entry: 10,
     c: "2D 06:00",
     vagrant: "ENTER CHALLENGE",
     lord: "FUND THIS BOUNTY",
+    challengeId: "3",
   },
 ]
 
 const LIVE_LIST = [
-  { t: "Dance in public", r: "$120", c: "01:45:12" },
-  { t: "Sing your ex a song", r: "$80", c: "00:52:03" },
+  { t: "Dance in public", r: "$120", c: "01:45:12", path: "/(app)/live" as const },
+  { t: "Sing your ex a song", r: "$80", c: "00:52:03", path: "/(app)/live" as const },
 ]
 
 export default function ArenaScreen() {
   const router = useRouter()
   const { v, isLord } = useVessel()
-  const { say } = useApp()
+  const { enterChallenge, fundBounty, say } = useApp()
   const [tab, setTab] = useState(0)
+  const [busy, setBusy] = useState(false)
   const A = ARENAS[tab]
   const cta = isLord ? A.lord : A.vagrant
+
+  const onCta = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      if (isLord) {
+        await fundBounty(A.t, A.fund)
+        Alert.alert("Bounty funded", `${A.t} · $${A.fund} held in mock escrow.`)
+        router.push("/(app)/wallet")
+      } else {
+        await enterChallenge(A.t, A.entry)
+        Alert.alert("You're in", `Stake $${A.entry} held. Record & post to claim.`)
+        router.push({ pathname: "/challenge-details", params: { id: A.challengeId } })
+      }
+    } catch (e: any) {
+      say(e?.message || "Action failed")
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <VesselScreen>
@@ -83,13 +113,19 @@ export default function ArenaScreen() {
       </Row>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-        <Label style={{ marginTop: space.sectionGap }}>{A.k}</Label>
-        <UiText weight="black" style={{ fontSize: 28, marginTop: 10 }}>
-          {A.t}
-        </UiText>
-        <UiText weight="reg" style={{ color: v.dim, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-          {A.s}
-        </UiText>
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/challenge-details", params: { id: A.challengeId } })
+          }
+        >
+          <Label style={{ marginTop: space.sectionGap }}>{A.k}</Label>
+          <UiText weight="black" style={{ fontSize: 28, marginTop: 10 }}>
+            {A.t}
+          </UiText>
+          <UiText weight="reg" style={{ color: v.dim, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
+            {A.s}
+          </UiText>
+        </Pressable>
 
         <Row style={{ marginTop: 22, justifyContent: "space-between" }}>
           <View>
@@ -103,12 +139,17 @@ export default function ArenaScreen() {
         </Row>
 
         <View style={{ marginTop: 24 }}>
-          <PrimaryButton title={cta} onPress={() => say(isLord ? "Bounty funded (test)" : "Entered challenge")} />
+          <PrimaryButton title={cta} onPress={onCta} disabled={busy} />
         </View>
+        <Label style={{ marginTop: 10, textAlign: "center", color: v.faint }}>
+          {isLord
+            ? `Funds $${A.fund} from available → bounty escrow`
+            : `Entry stake $${A.entry} held · then record via compose / go live`}
+        </Label>
 
         <Label style={{ marginTop: space.sectionGap }}>Live Now</Label>
         {LIVE_LIST.map((item) => (
-          <View key={item.t}>
+          <Pressable key={item.t} onPress={() => router.push(item.path)}>
             <Hairline />
             <Row style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -119,7 +160,7 @@ export default function ArenaScreen() {
               </View>
               <MonoNum style={{ color: v.lim, fontSize: 16 }}>{item.r}</MonoNum>
             </Row>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </VesselScreen>

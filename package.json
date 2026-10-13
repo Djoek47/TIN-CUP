@@ -16,7 +16,12 @@
     "eas:build:ios": "bash scripts/eas-with-token.sh build",
     "eas:submit:ios": "bash scripts/eas-with-token.sh submit",
     "update:preview": "eas update --branch preview --environment preview --message \"Obol OTA preview\" --non-interactive",
-    "update:prod": "eas update --branch production --environment production --message \"Obol OTA\" --non-interactive"
+    "update:prod": "eas update --branch production --environment production --message \"Obol OTA\" --non-interactive",
+    "seed:demo": "node --env-file=.env scripts/seed-demo-accounts.mjs",
+    "matrix": "node scripts/matrix-check.mjs",
+    "smoke:workflow": "node scripts/workflow-smoke.mjs",
+    "qa:mock": "npm run typecheck && npm run matrix && npm run smoke:workflow",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",

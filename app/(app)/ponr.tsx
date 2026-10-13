@@ -71,7 +71,12 @@ export default function Ponr() {
           <UiText weight="semi" style={{ flex: 1, fontSize: 14, color: v.ink }}>
             Bank Transfer ···· 4567
           </UiText>
-          <Pressable onPress={() => say("Payment method")}>
+          <Pressable
+            onPress={() => {
+              say("Mock escrow · add funds if needed")
+              router.push("/(app)/deposit")
+            }}
+          >
             <Label style={{ color: pure.amber }}>CHANGE</Label>
           </Pressable>
         </Row>

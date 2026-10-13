@@ -12,6 +12,7 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { DEMO_ACCOUNTS, type DemoRole } from "@/lib/demo-accounts"
 import { pure, space } from "@/theme/vessel"
 
 const METHODS: { id: string; label: string; to: "verify" | "fate" }[] = [
@@ -22,12 +23,26 @@ const METHODS: { id: string; label: string; to: "verify" | "fate" }[] = [
   { id: "wallet", label: "Wallet", to: "fate" },
 ]
 
-/** CONNECT — auth methods → verify or fate */
+/** CONNECT — demo dual accounts + auth methods → verify or fate */
 export default function SignIn() {
   const router = useRouter()
   const { v } = useVessel()
-  const { connect, say } = useApp()
+  const { connect, connectDemo, say } = useApp()
   const [busy, setBusy] = useState<string | null>(null)
+
+  const onDemo = async (role: DemoRole) => {
+    if (busy) return
+    setBusy(role)
+    try {
+      await connectDemo(role)
+      // Demo accounts already have caste set — skip fate picker, enter app
+      router.replace("/(app)" as Href)
+    } catch {
+      say("Demo connect failed")
+    } finally {
+      setBusy(null)
+    }
+  }
 
   const onMethod = async (method: (typeof METHODS)[number]) => {
     if (busy) return
@@ -49,17 +64,40 @@ export default function SignIn() {
   return (
     <VesselScreen nav={false}>
       <ScreenHeader title="CONNECT" onBack={() => router.back()} />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <UiText weight="black" style={{ fontSize: 28, color: v.ink, marginBottom: 6 }}>
           Connect
         </UiText>
-        <UiText weight="reg" style={{ fontSize: 13, color: v.dim, lineHeight: 20, marginBottom: 22 }}>
-          One tap and you&apos;re in. We make the wallet for you — no seed phrase, nothing to lose.
+        <UiText weight="reg" style={{ fontSize: 13, color: v.dim, lineHeight: 20, marginBottom: 18 }}>
+          Start with mock gold — two seeded accounts (peasant + lord). Real rails later.
         </UiText>
 
+        <Label style={{ color: v.amb, marginBottom: 10 }}>MOCK QA · FAKE MONEY</Label>
+        <PrimaryButton
+          title="ENTER AS VAGRANT (PEASANT)"
+          tone="lim"
+          disabled={!!busy}
+          onPress={() => onDemo("vagrant")}
+        />
+        <View style={{ height: 10 }} />
+        <PrimaryButton
+          title="ENTER AS LORD"
+          tone="amb"
+          disabled={!!busy}
+          onPress={() => onDemo("lord")}
+        />
+        <Label style={{ marginTop: 10, color: v.faint, lineHeight: 18 }}>
+          @{DEMO_ACCOUNTS.vagrant.user.handle} · $
+          {DEMO_ACCOUNTS.vagrant.seedFiat.available + DEMO_ACCOUNTS.vagrant.seedFiat.hold} mock · go live /
+          challenges / cash out
+        </Label>
+        <Label style={{ marginTop: 4, color: v.faint, lineHeight: 18 }}>
+          @{DEMO_ACCOUNTS.lord.user.handle} · $
+          {DEMO_ACCOUNTS.lord.seedFiat.available + DEMO_ACCOUNTS.lord.seedFiat.hold} mock · fund bounties /
+          pour gifts
+        </Label>
+
+        <Label style={{ marginTop: space.sectionGap, marginBottom: 8 }}>OTHER METHODS</Label>
         <View style={styles.list}>
           {METHODS.map((m, i) => (
             <Pressable
@@ -95,10 +133,7 @@ export default function SignIn() {
             onPress={() => onMethod(METHODS[0])}
           />
           <Label style={{ textAlign: "center", marginTop: 18, color: v.faint }}>
-            SECURED BY THIRDWEB
-          </Label>
-          <Label style={{ textAlign: "center", marginTop: 6, color: v.faint }}>
-            WE NEVER HOLD YOUR KEYS
+            MOCK FIRST · STRIPE / THIRDWEB WHEN KEYS SET
           </Label>
         </View>
       </ScrollView>

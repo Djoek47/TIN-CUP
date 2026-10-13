@@ -18,6 +18,13 @@ import {
   FiatCurrency,
 } from "@/lib/gold"
 import {
+  DEMO_ACCOUNTS,
+  DemoRole,
+  demoBalance,
+  demoLedger,
+  isDemoAddress,
+} from "@/lib/demo-accounts"
+import {
   AppUser,
   Balance,
   Caste,
@@ -48,6 +55,8 @@ type AppCtx = {
   moneyMode: ReturnType<typeof moneyMode>
   say: (text: string) => void
   connect: (method?: string) => Promise<void>
+  /** Load a fixed Supabase-seeded mock identity (vagrant or lord). */
+  connectDemo: (role: DemoRole) => Promise<void>
   disconnect: () => Promise<void>
   setTheme: (t: ThemeMode) => void
   setPrefs: (p: Partial<Prefs>) => void
@@ -58,6 +67,11 @@ type AppCtx = {
   cashOut: (amountFiat: number) => Promise<void>
   addFundsMock: (amountFiat: number) => Promise<void>
   deposit: (amountFiat: number, currency?: FiatCurrency) => Promise<void>
+  /** Vagrant enters a challenge (mock entry stake). */
+  enterChallenge: (title: string, entryFiat?: number) => Promise<void>
+  /** Lord funds a bounty (mock escrow out). */
+  fundBounty: (title: string, amountFiat: number) => Promise<void>
+  demoRole: DemoRole | null
 }
 
 const defaultUser: AppUser = {
@@ -213,10 +227,53 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [balance, caste, persist, say, user],
   )
 
+  const connectDemo = useCallback(
+    async (role: DemoRole) => {
+      const demo = DEMO_ACCOUNTS[role]
+      const nextUser = { ...demo.user }
+      const nextBal = demoBalance(role)
+      const nextLedger = demoLedger(role)
+      const nextPrefs = { ...defaultPrefs, currency: demo.seedFiat.currency }
+      setUser(nextUser)
+      setCaste(demo.caste)
+      setBalance(nextBal)
+      setLedger(nextLedger)
+      setPrefsState(nextPrefs)
+      await AsyncStorage.setItem(
+        KEY,
+        JSON.stringify({
+          caste: demo.caste,
+          theme,
+          user: nextUser,
+          balance: nextBal,
+          ledger: nextLedger,
+          prefs: nextPrefs,
+        }),
+      )
+      await upsertProfile({
+        address: demo.address,
+        user: nextUser,
+        caste: demo.caste,
+        balance: nextBal,
+      })
+      await insertNotification({
+        address: demo.address,
+        kind: "system",
+        title: `Signed in as ${demo.label}`,
+        body: "Mock gold provisioned for dual-caste QA",
+      })
+      say(`Loaded ${demo.label}`)
+    },
+    [say, theme],
+  )
+
   const disconnect = useCallback(async () => {
     const nextUser = { ...defaultUser, address: null }
     setUser(nextUser)
     setCaste("vagrant")
+    setBalance(SEED_BALANCE)
+    setLedger(SEED_LEDGER)
+    setPrefsState(defaultPrefs)
     await AsyncStorage.removeItem(KEY)
     say("Signed out")
   }, [say])
@@ -368,8 +425,119 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (user.address) {
         await upsertProfile({ address: user.address, user, caste, balance: nextBal })
         await insertLedger(entry, user.address)
+        await insertNotification({
+          address: user.address,
+          kind: "gift",
+          title: "Gold poured",
+          body: `${amountFiat} ${prefs.currency} → ${to}`,
+        })
+        // Cross-account mock: notify the other demo identity when handle matches
+        const peer =
+          to.replace(/^@/, "").toLowerCase() === DEMO_ACCOUNTS.vagrant.user.handle
+            ? DEMO_ACCOUNTS.vagrant
+            : to.replace(/^@/, "").toLowerCase() === DEMO_ACCOUNTS.lord.user.handle
+              ? DEMO_ACCOUNTS.lord
+              : null
+        if (peer && peer.address.toLowerCase() !== user.address.toLowerCase()) {
+          await insertNotification({
+            address: peer.address,
+            kind: "gift",
+            title: "You received gold",
+            body: `@${user.handle} poured ${amountFiat} ${prefs.currency}`,
+          })
+        }
       }
       say(`Poured to ${to}`)
+    },
+    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
+  )
+
+  const enterChallenge = useCallback(
+    async (title: string, entryFiat = 5) => {
+      if (caste === "lord") {
+        say("Lords fund bounties — they don't enter")
+        throw new Error("Lords fund, not enter")
+      }
+      const mg = fiatToGoldMg(entryFiat, prefs.currency)
+      if (mg > balance.gold_mg_available) {
+        say(MONEY_FAIL)
+        throw new Error(MONEY_FAIL)
+      }
+      const nextBal = withFiatMirrors({
+        ...balance,
+        gold_mg_available: balance.gold_mg_available - mg,
+        gold_mg_hold: balance.gold_mg_hold + mg,
+      })
+      const entry = makeEntry({
+        id: `ch-${Date.now()}`,
+        dir: "out",
+        who: title,
+        gold_mg: mg,
+        fiatAmount: entryFiat,
+        kind: "challenge",
+        escrow_status: "held",
+        ts: Date.now(),
+      })
+      const nextLedger = [entry, ...ledger]
+      setBalance(nextBal)
+      setLedger(nextLedger)
+      await persist({ balance: nextBal, ledger: nextLedger })
+      if (user.address) {
+        await upsertProfile({ address: user.address, user, caste, balance: nextBal })
+        await insertLedger(entry, user.address)
+        await insertNotification({
+          address: user.address,
+          kind: "challenge",
+          title: "Challenge entered",
+          body: `${title} · stake ${entryFiat} ${prefs.currency}`,
+        })
+      }
+      say(`Entered · ${title}`)
+    },
+    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
+  )
+
+  const fundBounty = useCallback(
+    async (title: string, amountFiat: number) => {
+      if (caste !== "lord") {
+        say("Only Lords fund bounties")
+        throw new Error("Vagrants enter, Lords fund")
+      }
+      const mg = fiatToGoldMg(amountFiat, prefs.currency)
+      if (amountFiat <= 0 || mg > balance.gold_mg_available) {
+        say(MONEY_FAIL)
+        throw new Error(MONEY_FAIL)
+      }
+      const nextBal = withFiatMirrors({
+        ...balance,
+        gold_mg_available: balance.gold_mg_available - mg,
+        gold_mg_hold: balance.gold_mg_hold + mg,
+      })
+      const entry = makeEntry({
+        id: `b-${Date.now()}`,
+        dir: "out",
+        who: title,
+        gold_mg: mg,
+        fiatAmount: amountFiat,
+        kind: "bounty",
+        escrow_status: "held",
+        ts: Date.now(),
+      })
+      const nextLedger = [entry, ...ledger]
+      setBalance(nextBal)
+      setLedger(nextLedger)
+      await persist({ balance: nextBal, ledger: nextLedger })
+      if (user.address) {
+        await upsertProfile({ address: user.address, user, caste, balance: nextBal })
+        await insertLedger(entry, user.address)
+        await insertNotification({
+          address: user.address,
+          kind: "bounty",
+          title: "Bounty funded",
+          body: `${title} · ${amountFiat} ${prefs.currency}`,
+        })
+      }
+      say(`Bounty funded · ${title}`)
     },
     [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
   )
@@ -471,6 +639,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [deposit, prefs.currency],
   )
 
+  const demoRole = isDemoAddress(user.address)
+
   const value = useMemo(
     () => ({
       ready,
@@ -486,6 +656,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       moneyMode: mode,
       say,
       connect,
+      connectDemo,
       disconnect,
       setTheme,
       setPrefs,
@@ -496,6 +667,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       cashOut,
       addFundsMock,
       deposit,
+      enterChallenge,
+      fundBounty,
+      demoRole,
     }),
     [
       ready,
@@ -511,6 +685,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       mode,
       say,
       connect,
+      connectDemo,
       disconnect,
       setTheme,
       setPrefs,
@@ -521,6 +696,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       cashOut,
       addFundsMock,
       deposit,
+      enterChallenge,
+      fundBounty,
+      demoRole,
     ],
   )
 
