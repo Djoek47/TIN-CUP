@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "0bol",
-    "slug": "obol",
+    "slug": "tin-cup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -67,7 +67,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "supabaseUrl": "",
+      "supabaseUrl": "https://wmeavdmmymawotzxxtuj.supabase.co",
       "supabaseAnonKey": "",
       "router": {},
       "eas": {
