@@ -14,16 +14,17 @@ import { space } from "@/theme/vessel"
 export default function ReceivedScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const params = useLocalSearchParams<{ amount?: string; from?: string }>()
+  const params = useLocalSearchParams<{ amount?: string; from?: string; to?: string }>()
   const amount = Number(params.amount ?? 250) || 250
-  const from = (params.from ?? "MAVERICK").replace("@", "").toUpperCase()
+  const from = (params.from ?? "YOU").replace("@", "").toUpperCase()
+  const to = (params.to ?? "THEM").replace("@", "").toUpperCase()
 
   return (
     <VesselScreen nav={false}>
       <View style={styles.wrap}>
-        <Label style={{ letterSpacing: 4 }}>{from}</Label>
+        <Label style={{ letterSpacing: 4 }}>{from} → {to}</Label>
         <UiText weight="semi" style={{ marginTop: 10, color: v.dim, fontSize: 14, letterSpacing: 2 }}>
-          SENT YOU
+          POUR CONFIRMED
         </UiText>
         <MonoNum style={{ color: v.limfill, fontSize: 56, marginTop: 18 }}>
           {fmtUsd(amount, { cents: false })}
@@ -42,11 +43,12 @@ export default function ReceivedScreen() {
           "Keep going. You're the reason I still watch."
         </UiText>
 
-        <View style={{ width: "100%", marginTop: 48 }}>
-          <PrimaryButton title="SAY THANKS ON AIR" tone="lim" onPress={() => router.replace("/(app)/live")} />
+        <View style={{ width: "100%", marginTop: 48, gap: 10 }}>
+          <PrimaryButton title="BACK TO WALLET" tone="lim" onPress={() => router.replace("/(app)/wallet")} />
+          <PrimaryButton title="WATCH LIVE" onPress={() => router.replace("/(app)/live")} />
         </View>
         <Pressable onPress={() => router.replace("/(app)")} style={{ marginTop: space.sectionGap }}>
-          <Label style={{ textAlign: "center" }}>DISMISS</Label>
+          <Label style={{ textAlign: "center" }}>HOME</Label>
         </Pressable>
       </View>
     </VesselScreen>

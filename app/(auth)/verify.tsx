@@ -46,10 +46,7 @@ export default function Verify() {
           Check your{"\n"}email
         </UiText>
         <UiText weight="reg" style={{ fontSize: 13, color: v.dim, marginTop: 10 }}>
-          Six digits sent to{" "}
-          <UiText weight="semi" style={{ color: v.ink }}>
-            kai@obol.app
-          </UiText>
+          TestFlight mock OTP — enter any six digits. Production email codes come later.
         </UiText>
 
         <View style={styles.boxes}>

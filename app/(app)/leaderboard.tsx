@@ -120,7 +120,7 @@ export default function LeaderboardScreen() {
         </Row>
 
         {D.list.map((row, i) => (
-          <View key={row.n}>
+          <Pressable key={row.n} onPress={() => router.push("/(app)/send")}>
             <Hairline />
             <Row style={styles.row}>
               <MonoNum style={{ width: 28, color: v.dim }}>{String(i + 4).padStart(2, "0")}</MonoNum>
@@ -129,7 +129,7 @@ export default function LeaderboardScreen() {
               </UiText>
               <MonoNum style={{ color: v.amb }}>{row.a}</MonoNum>
             </Row>
-          </View>
+          </Pressable>
         ))}
 
         <View style={[styles.you, { borderColor: v.amb, backgroundColor: v.surf, borderRadius: v.rad }]}>

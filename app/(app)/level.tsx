@@ -3,12 +3,14 @@ import { useRouter } from "expo-router"
 import {
   VesselScreen,
   ScreenHeader,
+  PrimaryButton,
   Label,
   UiText,
   MonoNum,
   Hairline,
   Row,
 } from "@/components/vessel"
+import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
 import { space } from "@/theme/vessel"
 
@@ -30,12 +32,16 @@ const PERKS = [
 
 export default function LevelScreen() {
   const router = useRouter()
-  const { v } = useVessel()
+  const { v, isLord } = useVessel()
+  const { caste } = useApp()
 
   return (
     <VesselScreen>
       <ScreenHeader title="Your Level" onBack={() => router.back()} />
       <ScrollView showsVerticalScrollIndicator={false}>
+        <Label style={{ marginTop: 4, color: isLord ? v.amb : v.lim }}>
+          {caste.toUpperCase()} · {isLord ? "XP RETIRED AT ASCENSION" : "CLIMB OR ASCEND"}
+        </Label>
         {LADDER.map((r) => (
           <View key={r.lv}>
             <Hairline />
@@ -71,6 +77,15 @@ export default function LevelScreen() {
             </Row>
           </View>
         ))}
+        {!isLord ? (
+          <View style={{ marginTop: 28, marginBottom: 24 }}>
+            <PrimaryButton title="ASCEND TO LORD · $100" onPress={() => router.push("/(app)/ascension")} />
+          </View>
+        ) : (
+          <View style={{ marginTop: 28, marginBottom: 24 }}>
+            <PrimaryButton title="POUR GOLD" onPress={() => router.push("/(app)/send")} />
+          </View>
+        )}
       </ScrollView>
     </VesselScreen>
   )
