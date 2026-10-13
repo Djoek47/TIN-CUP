@@ -1,21 +1,32 @@
 /** Money formatting + rail switch helpers */
-export type MoneyMode = "mock" | "testnet"
+import {
+  FiatCurrency,
+  fmtFiat,
+  fmtGoldMg,
+  goldMgToFiat,
+  MassUnit,
+  MoneyRail,
+} from "@/lib/gold"
+
+export type MoneyMode = MoneyRail
 
 export function moneyMode(): MoneyMode {
   const mode = (process.env.EXPO_PUBLIC_MONEY_MODE ?? "mock").toLowerCase()
-  const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ?? ""
-  const configured =
-    Boolean(clientId) && clientId !== "your_client_id_here" && !clientId.includes("YOUR_")
-  if (mode === "testnet" && configured) return "testnet"
+  if (mode === "stripe") return "stripe"
+  if (mode === "thirdweb" || mode === "testnet") {
+    const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ?? ""
+    const configured =
+      Boolean(clientId) && clientId !== "your_client_id_here" && !clientId.includes("YOUR_")
+    return configured ? "thirdweb" : "mock"
+  }
   return "mock"
 }
 
 export function fmtUsd(n: number, opts?: { cents?: boolean }): string {
-  const abs = Math.abs(n)
   if (opts?.cents === false) {
-    return `$${Math.round(abs).toLocaleString("en-US")}`
+    return `$${Math.round(Math.abs(n)).toLocaleString("en-US")}`
   }
-  return `$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return fmtFiat(n, "USD")
 }
 
 export function fmtCompactUsd(n: number): string {
@@ -24,6 +35,25 @@ export function fmtCompactUsd(n: number): string {
   return `$${Math.round(abs)}`
 }
 
+export function fmtBalanceGold(
+  goldMg: number,
+  unit: MassUnit,
+  currency: FiatCurrency,
+): { gold: string; fiat: string } {
+  return {
+    gold: fmtGoldMg(goldMg, unit),
+    fiat: fmtFiat(goldMgToFiat(goldMg, currency), currency),
+  }
+}
+
 export const MONEY_FAIL = "No gold moved."
 export const TEST_BADGE = "TEST WALLET · FAKE MONEY"
-export const TESTNET_BADGE = "TESTNET · BASE SEPOLIA"
+export const STRIPE_BADGE = "STRIPE · ESCROW"
+export const THIRDWEB_BADGE = "THIRDWEB · ESCROW"
+export const TESTNET_BADGE = THIRDWEB_BADGE
+
+export function moneyBadgeFor(mode: MoneyMode): string {
+  if (mode === "stripe") return STRIPE_BADGE
+  if (mode === "thirdweb") return THIRDWEB_BADGE
+  return TEST_BADGE
+}

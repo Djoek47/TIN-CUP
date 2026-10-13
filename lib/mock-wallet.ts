@@ -3,7 +3,7 @@ import { MONEY_FAIL, moneyMode } from "@/lib/money"
 
 export type MockAccount = {
   address: `0x${string}`
-  mode: "mock" | "testnet"
+  mode: "mock" | "thirdweb"
 }
 
 async function randomAddress(): Promise<`0x${string}`> {
@@ -20,8 +20,7 @@ export async function connectMockWallet(): Promise<MockAccount> {
 }
 
 /**
- * Testnet USDC send stub for tonight.
- * Real thirdweb Account wiring belongs in a custom EAS binary;
+ * Crypto send stub. Real thirdweb Account wiring belongs in a native TestFlight binary;
  * Expo Go / default path always throws MONEY_FAIL so UI shows failure copy
  * and AppState keeps the mock ledger authoritative.
  */
@@ -29,8 +28,7 @@ export async function sendTestnetUsdc(_params: {
   to: string
   amountUsd: number
 }): Promise<string> {
-  if (moneyMode() !== "testnet") throw new Error(MONEY_FAIL)
-  // Placeholder hash — replace with prepareContractCall + sendTransaction in EAS build.
+  if (moneyMode() !== "thirdweb") throw new Error(MONEY_FAIL)
   throw new Error(MONEY_FAIL)
 }
 

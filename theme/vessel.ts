@@ -1,5 +1,5 @@
 /**
- * TIN CUP — "The Vessel" design tokens
+ * OBOL — "The Vessel" design tokens
  * Amber = given. Lime = received.
  * Ported from docs/redesign/tokens.css
  */

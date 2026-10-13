@@ -51,7 +51,7 @@ export default function FeedOfMadness() {
             letterSpacing: 1,
           }}
         >
-          TIN CUP
+          OBOL
         </Txt>
         <View style={styles.dots}>
           {FEED_CLIPS.map((_, i) => (

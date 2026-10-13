@@ -1,57 +1,44 @@
-# TestFlight — tonight
+# Obol → Apple TestFlight
 
-## Apple credentials (required for TestFlight)
+Expo Go is fine for **mock UI** smoke tests. Stripe + thirdweb need a **native iOS binary**.
 
-Non-interactive cloud builds need App Store Connect API access. Add these Cloud Agent secrets:
+## Path (no EAS required)
 
-| Secret | What it is |
-|---|---|
-| `EXPO_TOKEN` | Expo access token (done) |
-| `EXPO_ASC_KEY_ID` | App Store Connect API Key ID |
-| `EXPO_ASC_ISSUER_ID` | App Store Connect Issuer ID |
-| `EXPO_ASC_API_KEY_P8` | Full contents of the `.p8` private key |
-
-Create the key: [App Store Connect → Users and Access → Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/integrations/api)
-
-One-time alternative on your Mac (stores creds on Expo servers):
-```bash
-eas credentials -p ios
-eas build -p ios --profile production
-```
-
-## Cloud Agent secret
-
-Add Cursor Cloud Agent secret **`EXPO_TOKEN`** (Expo → Account → Access Tokens).
-Never commit it. After adding, restart the agent so the env picks it up, then:
+1. Put keys in `.env` (see `.env.example`).
+2. Generate the iOS project once:
 
 ```bash
-npm run eas:whoami
-npm run eas:build:ios
+npx expo prebuild --platform ios --clean
 ```
 
-## Prerequisites (on your Mac)
-1. Apple Developer account membership
-2. App created in App Store Connect (`com.tincup.app`)
-3. `eas-cli` logged in: `npm i -g eas-cli && eas login`
+3. Open in Xcode:
 
-## Build & submit
 ```bash
-cd TIN-CUP
-git checkout cursor/vessel-testflight-mvp-78c3
-git pull
-npm install --legacy-peer-deps
-# edit eas.json → submit.production.ios.ascAppId
-eas build -p ios --profile production
-eas submit -p ios --profile production
+open ios/Obol.xcworkspace
 ```
 
-## What testers get
-- Vessel dual-caste UI (Vagrant lime / Lord gold)
-- Mock wallet with fake money by default
-- Camera fallback for Go Live / Live (LiveKit when env set)
-- Full 23-screen navigation loop
+   If the workspace name differs, open `ios/*.xcworkspace`.
 
-## Optional env for device build
-Set in EAS secrets / `.env.local` before build:
-- `EXPO_PUBLIC_MONEY_MODE=testnet` + thirdweb client id for Base Sepolia
-- `EXPO_PUBLIC_LIVEKIT_URL` + `EXPO_PUBLIC_LIVEKIT_TOKEN_URL` for real rooms
+4. Select your Team, set bundle id `com.obol.app`, bump build number.
+5. **Product → Archive**, then **Distribute App → App Store Connect → Upload**.
+6. In App Store Connect → TestFlight, add internal testers.
+
+## App icon
+
+Default store icon is `assets/icon.png` (= `icon-night-gold`). Light / marketing variants live under `assets/brand/obol/png/1024/`.
+
+## Checklist before upload
+
+- [ ] Splash shows Obol coin + “A COIN FOR THE CROSSING”
+- [ ] Wallet shows gold_mg + USD/CAD + escrow hold
+- [ ] Settings toggles currency (USD/CAD) and mass unit (mg/g/kg/lb/oz)
+- [ ] Lords cannot cash out
+- [ ] `EXPO_PUBLIC_MONEY_MODE=mock` for first TestFlight if Stripe/thirdweb keys are not live yet
+
+## Expo Go (optional)
+
+```bash
+npm run dev
+```
+
+Use only with `EXPO_PUBLIC_MONEY_MODE=mock`. Native wallet modules will not load in Expo Go.

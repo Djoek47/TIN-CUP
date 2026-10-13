@@ -6,7 +6,7 @@ import { supabase } from "./supabase"
 export async function initializeStripe(publishableKey: string) {
   await initStripe({
     publishableKey,
-    merchantIdentifier: "merchant.com.tincup.app",
+    merchantIdentifier: "merchant.com.obol.app",
   })
 }
 

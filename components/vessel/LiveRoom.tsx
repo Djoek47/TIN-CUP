@@ -18,7 +18,7 @@ try {
  */
 export function LiveRoom({
   mode,
-  room = "tincup-demo",
+  room = "obol-demo",
   identity = "guest",
 }: {
   mode: "publish" | "subscribe"

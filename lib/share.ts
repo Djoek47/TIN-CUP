@@ -3,8 +3,8 @@ import * as Clipboard from "expo-clipboard"
 import { Alert } from "react-native"
 
 // Base URL for deep links (update with your domain)
-const DEEP_LINK_BASE = "tincup://app"
-const WEB_BASE = "https://tincup.app" // Update with your deployed domain
+const DEEP_LINK_BASE = "obol://app"
+const WEB_BASE = "https://obol.app" // Update with your deployed domain
 
 export interface ShareOptions {
   title?: string
@@ -26,13 +26,13 @@ export function generateProfileDeepLink(walletAddress: string): string {
 // Generate shareable message for a beg
 export function generateBegShareMessage(title: string, begId: string): string {
   const deepLink = generateBegDeepLink(begId)
-  return `Check out this beg on Tin Cup: "${title}"\n\n${deepLink}`
+  return `Check out this beg on Obol: "${title}"\n\n${deepLink}`
 }
 
 // Generate shareable message for a profile
 export function generateProfileShareMessage(displayName: string, walletAddress: string): string {
   const deepLink = generateProfileDeepLink(walletAddress)
-  return `Follow ${displayName} on Tin Cup\n\n${deepLink}`
+  return `Follow ${displayName} on Obol\n\n${deepLink}`
 }
 
 // Share to social/email using native share

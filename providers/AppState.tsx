@@ -9,7 +9,14 @@ import {
 } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { connectMockWallet } from "@/lib/mock-wallet"
-import { MONEY_FAIL, moneyMode, TEST_BADGE, TESTNET_BADGE } from "@/lib/money"
+import { MONEY_FAIL, moneyBadgeFor, moneyMode } from "@/lib/money"
+import {
+  fiatToGoldMg,
+  goldMgToFiat,
+  LORD_FEE_FIAT,
+  xauSpot,
+  FiatCurrency,
+} from "@/lib/gold"
 import {
   AppUser,
   Balance,
@@ -22,7 +29,7 @@ import {
 } from "@/lib/vessel-types"
 import { VesselThemeProvider } from "@/providers/VesselTheme"
 
-const KEY = "tincup_vessel_v1"
+const KEY = "obol_vessel_v1"
 
 type Toast = { id: number; text: string } | null
 
@@ -37,6 +44,7 @@ type AppCtx = {
   toast: Toast
   moneyBadge: string
   isMock: boolean
+  moneyMode: ReturnType<typeof moneyMode>
   say: (text: string) => void
   connect: (method?: string) => Promise<void>
   disconnect: () => Promise<void>
@@ -45,9 +53,10 @@ type AppCtx = {
   updateUser: (p: Partial<AppUser>) => void
   chooseVagrant: () => Promise<void>
   ascendLord: () => Promise<void>
-  gift: (to: string, amount: number, message?: string) => Promise<void>
-  cashOut: (amount: number) => Promise<void>
-  addFundsMock: (amount: number) => Promise<void>
+  gift: (to: string, amountFiat: number, message?: string) => Promise<void>
+  cashOut: (amountFiat: number) => Promise<void>
+  addFundsMock: (amountFiat: number) => Promise<void>
+  deposit: (amountFiat: number, currency?: FiatCurrency) => Promise<void>
 }
 
 const defaultUser: AppUser = {
@@ -55,7 +64,7 @@ const defaultUser: AppUser = {
   displayName: "Maverick",
   bio: "I don't follow trends, I start them.",
   location: "Toronto, CA",
-  link: "tincup.app/maverick",
+  link: "obol.app/maverick",
   adult: false,
   address: null,
 }
@@ -66,6 +75,69 @@ const defaultPrefs: Prefs = {
   nCourt: false,
   priv: false,
   hideAmt: false,
+  currency: "USD",
+  massUnit: "g",
+}
+
+function withFiatMirrors(b: Omit<Balance, "total" | "available" | "hold" | "coinDust"> & { coinDust?: number }): Balance {
+  const cur = b.displayCurrency
+  return {
+    ...b,
+    coinDust: b.coinDust ?? 0,
+    available: goldMgToFiat(b.gold_mg_available, cur),
+    hold: goldMgToFiat(b.gold_mg_hold, cur),
+    total: goldMgToFiat(b.gold_mg_total, cur),
+  }
+}
+
+function migrateBalance(raw: Partial<Balance> | undefined): Balance {
+  if (!raw) return SEED_BALANCE
+  if (typeof raw.gold_mg_total === "number") {
+    return withFiatMirrors({
+      gold_mg_total: raw.gold_mg_total,
+      gold_mg_available: raw.gold_mg_available ?? 0,
+      gold_mg_hold: raw.gold_mg_hold ?? 0,
+      hidden: !!raw.hidden,
+      displayCurrency: raw.displayCurrency ?? "USD",
+      massUnit: raw.massUnit ?? "g",
+      coinDust: raw.coinDust,
+    })
+  }
+  // Legacy USD-only seed
+  const avail = Number(raw.available ?? SEED_BALANCE.available)
+  const hold = Number(raw.hold ?? SEED_BALANCE.hold)
+  const total = Number(raw.total ?? avail + hold)
+  return withFiatMirrors({
+    gold_mg_available: fiatToGoldMg(avail, "USD"),
+    gold_mg_hold: fiatToGoldMg(hold, "USD"),
+    gold_mg_total: fiatToGoldMg(total, "USD"),
+    hidden: !!raw.hidden,
+    displayCurrency: "USD",
+    massUnit: "g",
+    coinDust: raw.coinDust,
+  })
+}
+
+function migrateLedger(raw: unknown): LedgerEntry[] {
+  if (!Array.isArray(raw)) return SEED_LEDGER
+  return raw.map((e: any, i) => {
+    if (typeof e.gold_mg === "number") return e as LedgerEntry
+    const amount = Number(e.amount ?? 0)
+    return {
+      id: String(e.id ?? i),
+      dir: e.dir === "out" ? "out" : "in",
+      who: String(e.who ?? "unknown"),
+      gold_mg: fiatToGoldMg(amount, "USD"),
+      fiat_cents: Math.round(amount * 100),
+      currency: "USD" as FiatCurrency,
+      xau_rate: xauSpot("USD"),
+      rail: "mock" as const,
+      escrow_status: e.dir === "out" ? "spent" : "held",
+      kind: e.kind ?? "other",
+      ts: Number(e.ts ?? Date.now()),
+      amount,
+    } satisfies LedgerEntry
+  })
 }
 
 const Ctx = createContext<AppCtx | null>(null)
@@ -80,8 +152,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefsState] = useState<Prefs>(defaultPrefs)
   const [toast, setToast] = useState<Toast>(null)
 
-  const isMock = moneyMode() === "mock"
-  const moneyBadge = isMock ? TEST_BADGE : TESTNET_BADGE
+  const mode = moneyMode()
+  const isMock = mode === "mock"
+  const moneyBadge = moneyBadgeFor(mode)
 
   const persist = useCallback(
     async (patch: Partial<{ caste: Caste; theme: ThemeMode; user: AppUser; balance: Balance; ledger: LedgerEntry[]; prefs: Prefs }>) => {
@@ -107,8 +180,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           if (data.caste === "lord" || data.caste === "vagrant") setCaste(data.caste)
           if (data.theme === "light" || data.theme === "dark") setThemeState(data.theme)
           if (data.user) setUser({ ...defaultUser, ...data.user })
-          if (data.balance) setBalance({ ...SEED_BALANCE, ...data.balance })
-          if (Array.isArray(data.ledger)) setLedger(data.ledger)
+          if (data.balance) setBalance(migrateBalance(data.balance))
+          if (data.ledger) setLedger(migrateLedger(data.ledger))
           if (data.prefs) setPrefsState({ ...defaultPrefs, ...data.prefs })
         }
       } finally {
@@ -154,11 +227,20 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     (p: Partial<Prefs>) => {
       setPrefsState((prev) => {
         const next = { ...prev, ...p }
-        persist({ prefs: next })
+        let nextBal = balance
+        if (p.currency && p.currency !== prev.currency) {
+          nextBal = withFiatMirrors({ ...balance, displayCurrency: p.currency })
+          setBalance(nextBal)
+        }
+        if (p.massUnit && p.massUnit !== prev.massUnit) {
+          nextBal = withFiatMirrors({ ...balance, massUnit: p.massUnit, displayCurrency: next.currency })
+          setBalance(nextBal)
+        }
+        persist({ prefs: next, balance: nextBal })
         return next
       })
     },
-    [persist],
+    [balance, persist],
   )
 
   const updateUser = useCallback(
@@ -182,108 +264,179 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     say("Welcome, Vagrant")
   }, [caste, persist, say])
 
+  const makeEntry = useCallback(
+    (
+      partial: Omit<LedgerEntry, "currency" | "xau_rate" | "rail" | "fiat_cents" | "amount"> & {
+        fiatAmount: number
+      },
+    ): LedgerEntry => {
+      const currency = prefs.currency
+      const fiatAmount = partial.fiatAmount
+      return {
+        id: partial.id,
+        dir: partial.dir,
+        who: partial.who,
+        gold_mg: partial.gold_mg,
+        fiat_cents: Math.round(fiatAmount * 100),
+        currency,
+        xau_rate: xauSpot(currency),
+        rail: mode,
+        escrow_status: partial.escrow_status,
+        kind: partial.kind,
+        ts: partial.ts,
+        amount: fiatAmount,
+      }
+    },
+    [mode, prefs.currency],
+  )
+
   const ascendLord = useCallback(async () => {
     if (caste === "lord") {
       say("Already a Lord")
       return
     }
-    if (balance.available < 100) {
+    const feeMg = fiatToGoldMg(LORD_FEE_FIAT, prefs.currency)
+    if (balance.gold_mg_available < feeMg) {
       say(MONEY_FAIL)
       throw new Error(MONEY_FAIL)
     }
-    const nextBal: Balance = {
+    const nextBal = withFiatMirrors({
       ...balance,
-      available: +(balance.available - 100).toFixed(2),
-      total: +(balance.total - 100).toFixed(2),
-    }
-    const entry: LedgerEntry = {
+      gold_mg_available: balance.gold_mg_available - feeMg,
+      gold_mg_total: balance.gold_mg_total - feeMg,
+    })
+    const entry = makeEntry({
       id: `asc-${Date.now()}`,
       dir: "out",
       who: "Lord ascension",
-      amount: 100,
+      gold_mg: feeMg,
+      fiatAmount: LORD_FEE_FIAT,
       kind: "ascend",
+      escrow_status: "spent",
       ts: Date.now(),
-    }
+    })
     const nextLedger = [entry, ...ledger]
     setBalance(nextBal)
     setLedger(nextLedger)
     setCaste("lord")
     await persist({ caste: "lord", balance: nextBal, ledger: nextLedger })
     say("You are now a Lord")
-  }, [balance, caste, ledger, persist, say])
+  }, [balance, caste, ledger, makeEntry, persist, prefs.currency, say])
 
   const gift = useCallback(
-    async (to: string, amount: number, _message?: string) => {
-      if (amount <= 0 || amount > balance.available) {
+    async (to: string, amountFiat: number, _message?: string) => {
+      const mg = fiatToGoldMg(amountFiat, prefs.currency)
+      if (amountFiat <= 0 || mg > balance.gold_mg_available) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
       }
-      const nextBal: Balance = {
+      const nextBal = withFiatMirrors({
         ...balance,
-        available: +(balance.available - amount).toFixed(2),
-        total: +(balance.total - amount).toFixed(2),
-      }
-      const entry: LedgerEntry = {
+        gold_mg_available: balance.gold_mg_available - mg,
+        gold_mg_total: balance.gold_mg_total - mg,
+      })
+      const entry = makeEntry({
         id: `g-${Date.now()}`,
         dir: "out",
         who: to,
-        amount,
+        gold_mg: mg,
+        fiatAmount: amountFiat,
         kind: "gift",
+        escrow_status: "spent",
         ts: Date.now(),
-      }
+      })
       const nextLedger = [entry, ...ledger]
       setBalance(nextBal)
       setLedger(nextLedger)
       await persist({ balance: nextBal, ledger: nextLedger })
-      say(`Poured $${amount} to ${to}`)
+      say(`Poured to ${to}`)
     },
-    [balance, ledger, persist, say],
+    [balance, ledger, makeEntry, persist, prefs.currency, say],
   )
 
   const cashOut = useCallback(
-    async (amount: number) => {
+    async (amountFiat: number) => {
       if (caste === "lord") {
         say("Lords put in. Nothing comes out.")
         throw new Error("Lords cannot cash out")
       }
-      if (amount <= 0 || amount > balance.available) {
+      const mg = fiatToGoldMg(amountFiat, prefs.currency)
+      if (amountFiat <= 0 || mg > balance.gold_mg_available) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
       }
-      const nextBal: Balance = {
+      // Release from available → escrow released out of platform
+      const nextBal = withFiatMirrors({
         ...balance,
-        available: +(balance.available - amount).toFixed(2),
-        total: +(balance.total - amount).toFixed(2),
-      }
-      const entry: LedgerEntry = {
+        gold_mg_available: balance.gold_mg_available - mg,
+        gold_mg_total: balance.gold_mg_total - mg,
+      })
+      const entry = makeEntry({
         id: `c-${Date.now()}`,
         dir: "out",
-        who: "Cash out to bank",
-        amount,
+        who: mode === "stripe" ? "Cash out · Stripe" : mode === "thirdweb" ? "Cash out · thirdweb" : "Cash out to bank",
+        gold_mg: mg,
+        fiatAmount: amountFiat,
         kind: "cash",
+        escrow_status: "released",
         ts: Date.now(),
-      }
+      })
       const nextLedger = [entry, ...ledger]
       setBalance(nextBal)
       setLedger(nextLedger)
       await persist({ balance: nextBal, ledger: nextLedger })
-      say(`Cash out $${amount} queued`)
+      say(`Cash out queued`)
     },
-    [balance, caste, ledger, persist, say],
+    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say],
+  )
+
+  const deposit = useCallback(
+    async (amountFiat: number, currency?: FiatCurrency) => {
+      const cur = currency ?? prefs.currency
+      // Stripe rail: attempt PaymentIntent when keys present; always mint ledger after
+      if (mode === "stripe") {
+        try {
+          const { stripeDeposit } = await import("@/lib/rails")
+          await stripeDeposit(amountFiat, cur)
+        } catch {
+          /* fall through to local escrow mint */
+        }
+      }
+      const mg = fiatToGoldMg(amountFiat, cur)
+      // New deposits enter escrow hold, then a portion is available (demo: 70% available / 30% hold)
+      const holdMg = mg * 0.3
+      const availMg = mg - holdMg
+      const nextBal = withFiatMirrors({
+        ...balance,
+        displayCurrency: cur,
+        gold_mg_available: balance.gold_mg_available + availMg,
+        gold_mg_hold: balance.gold_mg_hold + holdMg,
+        gold_mg_total: balance.gold_mg_total + mg,
+      })
+      const entry = makeEntry({
+        id: `d-${Date.now()}`,
+        dir: "in",
+        who: mode === "stripe" ? "Deposit · Stripe escrow" : mode === "thirdweb" ? "Deposit · treasury" : "Deposit · mock escrow",
+        gold_mg: mg,
+        fiatAmount: amountFiat,
+        kind: "deposit",
+        escrow_status: "held",
+        ts: Date.now(),
+      })
+      const nextLedger = [entry, ...ledger]
+      setBalance(nextBal)
+      setLedger(nextLedger)
+      await persist({ balance: nextBal, ledger: nextLedger })
+      say(`Escrow credited`)
+    },
+    [balance, ledger, makeEntry, mode, persist, prefs.currency, say],
   )
 
   const addFundsMock = useCallback(
-    async (amount: number) => {
-      const nextBal: Balance = {
-        ...balance,
-        available: +(balance.available + amount).toFixed(2),
-        total: +(balance.total + amount).toFixed(2),
-      }
-      setBalance(nextBal)
-      await persist({ balance: nextBal })
-      say(`Added $${amount} (test)`)
+    async (amountFiat: number) => {
+      await deposit(amountFiat, prefs.currency)
     },
-    [balance, persist, say],
+    [deposit, prefs.currency],
   )
 
   const value = useMemo(
@@ -298,6 +451,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toast,
       moneyBadge,
       isMock,
+      moneyMode: mode,
       say,
       connect,
       disconnect,
@@ -309,6 +463,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       gift,
       cashOut,
       addFundsMock,
+      deposit,
     }),
     [
       ready,
@@ -321,6 +476,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       toast,
       moneyBadge,
       isMock,
+      mode,
       say,
       connect,
       disconnect,
@@ -332,6 +488,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       gift,
       cashOut,
       addFundsMock,
+      deposit,
     ],
   )
 

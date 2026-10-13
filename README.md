@@ -1,29 +1,36 @@
-# Tin Cup — The Vessel (Expo)
+# Obol
 
-Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber = given. Lime = received.
+> A coin for the crossing.
 
-## Try it now (no Apple distribution)
+Live social-giving. Two castes: **Vagrant** (receive) and **Lord** (give). Amber = given. Lime = received. Balances are **reference gold** (`gold_mg`) convertible to g / kg / lb / oz from USD or CAD. Funds sit in **platform escrow** until gifted or cashed out.
 
-**OTA update published** to branch `preview` (SDK 57):
+## Brand
 
-https://expo.dev/accounts/djoek47/projects/tin-cup/updates/2892a483-2d61-4b76-9a41-db3926686f9d
+Unified coin mark — liquid surface locked at **y=56** across all modes (day/night, vagrant/lord, arrival/handoff/crossing). Assets live in [`assets/brand/obol/`](assets/brand/obol/).
 
-Or run a live tunnel:
+## Stack
+
+Expo Router · Vessel dual-caste UI · Supabase ledger · Stripe + thirdweb rails · mock wallet by default
+
+## Money
+
+| Mode | Env | Behavior |
+|------|-----|----------|
+| `mock` | default | Local escrow mint/burn |
+| `stripe` | `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Fiat deposit / Connect cash-out |
+| `thirdweb` | `EXPO_PUBLIC_THIRDWEB_CLIENT_ID` | USDT ↔ treasury escrow |
+
+Copy [`.env.example`](.env.example) → `.env` and paste keys when ready.
+
+## Run (Expo Go — mock UI only)
 
 ```bash
 npm install --legacy-peer-deps
 npm run dev
 ```
 
-Open in **Expo Go (SDK 57)** via QR / tunnel URL.
+Full thirdweb/Stripe needs a **native iOS build** (see [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md)).
 
-See [docs/OTA.md](docs/OTA.md).
+## TestFlight
 
-## Money
-Default mock wallet: `TEST WALLET · FAKE MONEY`. Optional Base Sepolia when `EXPO_PUBLIC_MONEY_MODE=testnet` + thirdweb client id.
-
-## Apple TestFlight
-Deferred until you create distribution credentials. Then follow [docs/TESTFLIGHT.md](docs/TESTFLIGHT.md).
-
-## Stack
-Expo Router 54 · Vessel dual-caste UI · mock wallet · EAS Update · camera/LiveKit fallback
+Native archive via Xcode → App Store Connect. Not Expo Go for production money rails.

@@ -1,4 +1,4 @@
-// Error types and handling utilities for Tin Cup
+// Error types and handling utilities for Obol
 
 export class AppError extends Error {
   constructor(

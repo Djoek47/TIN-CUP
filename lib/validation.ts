@@ -1,4 +1,4 @@
-// Input validation utilities for Tin Cup
+// Input validation utilities for Obol
 
 import {
   validateAmount,

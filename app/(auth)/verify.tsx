@@ -48,7 +48,7 @@ export default function Verify() {
         <UiText weight="reg" style={{ fontSize: 13, color: v.dim, marginTop: 10 }}>
           Six digits sent to{" "}
           <UiText weight="semi" style={{ color: v.ink }}>
-            kai@tincup.app
+            kai@obol.app
           </UiText>
         </UiText>
 

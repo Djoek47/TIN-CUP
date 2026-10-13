@@ -2,7 +2,7 @@ import { View, StyleSheet, ScrollView } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
-  VesselCup,
+  ObolMark,
   PrimaryButton,
   UiText,
   Label,
@@ -43,12 +43,12 @@ export default function Welcome() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.top}>
-          <VesselCup fill={0.72} width={64} height={104} />
+          <ObolMark size={72} fill={0.72} moment="idle" />
           <UiText weight="black" style={[styles.wordmark, { color: v.ink }]}>
-            TIN CUP
+            OBOL
           </UiText>
           <Label style={{ color: pure.amber, letterSpacing: 3, marginTop: 8 }}>
-            LIVE GENEROSITY. REAL STORIES.
+            A COIN FOR THE CROSSING
           </Label>
         </View>
 

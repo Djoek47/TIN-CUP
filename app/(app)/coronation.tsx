@@ -2,7 +2,7 @@ import { View, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
-  VesselCup,
+  ObolMark,
   PrimaryButton,
   UiText,
   Label,
@@ -19,7 +19,7 @@ export default function Coronation() {
     <VesselScreen nav={false}>
       <View style={styles.root}>
         <View style={styles.hero}>
-          <VesselCup fill={1} width={88} height={140} />
+          <ObolMark size={108} fill={1} moment="idle" />
           <Label style={{ color: pure.amber, letterSpacing: 4, marginTop: 28 }}>
             YOU ARE NOW
           </Label>

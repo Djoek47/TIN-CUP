@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { MOCK_WALLETS, generateTestProfile } from '../lib/test-utils'
 
 /**
- * Seed demo data for Tin Cup testing
+ * Seed demo data for Obol testing
  * Run: npx ts-node scripts/seed-demo.ts
  */
 
@@ -16,7 +16,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function seedDemo() {
-  console.log('Seeding demo data for Tin Cup...')
+  console.log('Seeding demo data for Obol...')
 
   try {
     // Create demo profiles

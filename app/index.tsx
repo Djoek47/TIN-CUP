@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
-  VesselCup,
+  ObolMark,
   PrimaryButton,
   UiText,
   Label,
@@ -52,7 +52,7 @@ export default function Splash() {
     <VesselScreen nav={false}>
       <View style={styles.root}>
         <View style={styles.hero}>
-          <VesselCup fill={fill} width={92} height={148} />
+          <ObolMark size={112} fill={fill} moment="crossing" />
           {showMark ? (
             <View style={styles.markBlock}>
               <UiText
@@ -62,10 +62,10 @@ export default function Splash() {
                   { color: v.ink, letterSpacing: v.track * 10 },
                 ]}
               >
-                TIN CUP
+                OBOL
               </UiText>
               <Label style={{ color: pure.amber, letterSpacing: 3, marginTop: 10 }}>
-                LIVE GENEROSITY. REAL STORIES.
+                A COIN FOR THE CROSSING
               </Label>
             </View>
           ) : (

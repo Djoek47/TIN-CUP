@@ -39,7 +39,7 @@ export default function HomeScreen() {
         <Row style={styles.top}>
           <Row style={{ gap: 9, flex: 1 }}>
             <UiText weight="black" style={{ fontSize: 15, letterSpacing: isLord ? 7 : 4.5 }}>
-              TIN CUP
+              OBOL
             </UiText>
             <View
               style={[

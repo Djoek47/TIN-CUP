@@ -1,7 +1,7 @@
 import { ethers } from 'ethers'
 
 /**
- * Test/Demo Utilities for Tin Cup
+ * Test/Demo Utilities for Obol
  * Use these for testing without real blockchain transactions
  */
 

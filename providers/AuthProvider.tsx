@@ -20,8 +20,8 @@ import {
   type WalletAccount,
 } from "@/lib/thirdweb"
 
-const WALLET_KEY = "tincup_wallet_address"
-const DEMO_ADDR_KEY = "tincup_demo_address"
+const WALLET_KEY = "obol_wallet_address"
+const DEMO_ADDR_KEY = "obol_demo_address"
 
 interface AuthState {
   wallet: string | null

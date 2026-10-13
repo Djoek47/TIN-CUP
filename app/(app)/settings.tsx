@@ -15,7 +15,7 @@ import { space } from "@/theme/vessel"
 export default function SettingsScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const { user, caste, theme, prefs, setTheme, setPrefs, disconnect, say } = useApp()
+  const { user, caste, theme, prefs, setTheme, setPrefs, disconnect, say, moneyBadge } = useApp()
 
   return (
     <VesselScreen nav={false}>
@@ -73,6 +73,34 @@ export default function SettingsScreen() {
             <Label>{theme === "dark" ? "DARK" : "LIGHT"}</Label>
           </Pressable>
         </Row>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Display currency
+          </UiText>
+          <Pressable
+            onPress={() => setPrefs({ currency: prefs.currency === "USD" ? "CAD" : "USD" })}
+            style={[styles.themeBtn, { borderColor: v.line, borderRadius: v.radPill }]}
+          >
+            <Label>{prefs.currency}</Label>
+          </Pressable>
+        </Row>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Gold unit
+          </UiText>
+          <Pressable
+            onPress={() => {
+              const order = ["mg", "g", "kg", "lb", "oz"] as const
+              const i = order.indexOf(prefs.massUnit)
+              setPrefs({ massUnit: order[(i + 1) % order.length] })
+            }}
+            style={[styles.themeBtn, { borderColor: v.line, borderRadius: v.radPill }]}
+          >
+            <Label>{prefs.massUnit.toUpperCase()}</Label>
+          </Pressable>
+        </Row>
 
         <Label style={{ marginTop: space.sectionGap }}>NOTIFICATIONS</Label>
         <Toggle
@@ -128,7 +156,8 @@ export default function SettingsScreen() {
         >
           <Label style={{ textAlign: "center", color: "#E5484D", letterSpacing: 2 }}>SIGN OUT</Label>
         </Pressable>
-        <Label style={{ textAlign: "center", marginBottom: 24 }}>TIN CUP · V1.0 · SECURED BY THIRDWEB</Label>
+        <Label style={{ textAlign: "center", marginBottom: 8 }}>{moneyBadge}</Label>
+        <Label style={{ textAlign: "center", marginBottom: 24 }}>OBOL · V1.0 · A COIN FOR THE CROSSING</Label>
       </ScrollView>
     </VesselScreen>
   )
