@@ -1,5 +1,5 @@
 /**
- * OBOL — "The Vessel" design tokens
+ * 0bol — "The Vessel" design tokens
  * Amber = given. Lime = received.
  * Ported from docs/redesign/tokens.css
  */
@@ -139,6 +139,8 @@ export function vesselColors(caste: Caste, theme: ThemeMode): VesselColors {
 }
 
 export const font = {
+  /** Ceremonial display — splash / coronation / lord titles */
+  display: "Ultra_400Regular",
   ui: "Archivo_700Bold",
   uiSemi: "Archivo_600SemiBold",
   uiBlack: "Archivo_900Black",

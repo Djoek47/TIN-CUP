@@ -135,12 +135,12 @@ export default function ProfileScreen() {
 
         <Label style={{ marginTop: space.sectionGap }}>TOP SUPPORTER</Label>
         <Hairline />
-        <Row style={styles.row}>
+        <Pressable onPress={() => router.push("/(app)/send")} style={styles.row}>
           <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
-            @maverick
+            @{isLord ? "dusty" : "baron"}
           </UiText>
-          <MonoNum style={{ color: v.amb }}>{fmtCompactUsd(1250)}</MonoNum>
-        </Row>
+          <MonoNum style={{ color: v.amb }}>{fmtCompactUsd(isLord ? 250 : 1250)}</MonoNum>
+        </Pressable>
 
         <Label style={{ marginTop: space.sectionGap }}>RANKS / BARKS</Label>
         <Hairline />

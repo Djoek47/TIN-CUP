@@ -75,7 +75,7 @@ export default function DepositScreen() {
     <VesselScreen>
       <ScreenHeader title="Add Gold" onBack={() => router.back()} />
       <View style={{ alignItems: "center", marginTop: 12 }}>
-        <ObolMark size={96} fill={0.7} moment="arrival" />
+        <ObolMark size={96} fill={0.7} moment="arrival" useRaster />
         <Label style={{ marginTop: 14, color: v.amb, letterSpacing: 2 }}>
           {stripeOn ? "STRIPE TEST ESCROW" : "ESCROW MINT"}
         </Label>

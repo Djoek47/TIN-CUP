@@ -75,11 +75,11 @@ type AppCtx = {
 }
 
 const defaultUser: AppUser = {
-  handle: "maverick",
-  displayName: "Maverick",
-  bio: "I don't follow trends, I start them.",
-  location: "Toronto, CA",
-  link: "obol.app/maverick",
+  handle: "guest",
+  displayName: "Guest",
+  bio: "A coin for the crossing.",
+  location: "",
+  link: "obol.app",
   adult: false,
   address: null,
 }

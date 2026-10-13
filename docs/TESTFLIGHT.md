@@ -1,6 +1,6 @@
 # 0bol → Apple TestFlight
 
-App Store Connect name: **0bol** · In-app brand: **OBOL** · Bundle ID: `com.obol.app` · ASC App ID: `6822289532`
+App Store Connect name: **0bol** · In-app wordmark: **0bol** · Bundle ID: `com.obol.app` · ASC App ID: `6822289532`
 
 Expo Go is fine for **mock UI** smoke tests. Stripe + thirdweb need a **native iOS binary**.
 
@@ -29,11 +29,13 @@ Default store icon is `assets/icon.png` (= `icon-night-gold`). Light / marketing
 
 ## Checklist before upload
 
-- [ ] Splash shows Obol coin + “A COIN FOR THE CROSSING”
+- [ ] Splash shows 0bol coin mark + “A COIN FOR THE CROSSING”
 - [ ] Wallet shows gold_mg + USD/CAD + escrow hold
 - [ ] Settings toggles currency (USD/CAD) and mass unit (mg/g/kg/lb/oz)
-- [ ] Lords cannot cash out
-- [ ] `EXPO_PUBLIC_MONEY_MODE=mock` for first TestFlight if Stripe/thirdweb keys are not live yet
+- [ ] Lords cannot cash out; vagrants can
+- [ ] Dual demo accounts: ENTER AS VAGRANT / ENTER AS LORD
+- [ ] Stripe test deposit when `pk_test` set (card 4242…)
+- [ ] Explicit user approval before any TestFlight submit
 
 ## Expo Go (optional)
 

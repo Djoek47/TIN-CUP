@@ -10,7 +10,7 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
-import { motion, space, pure } from "@/theme/vessel"
+import { font, motion, space, pure } from "@/theme/vessel"
 
 /** Splash — vessel fill, wordmark, ENTER THE ARENA / resume session */
 export default function Splash() {
@@ -53,12 +53,15 @@ export default function Splash() {
     <VesselScreen nav={false}>
       <View style={styles.root}>
         <View style={styles.hero}>
-          <ObolMark size={112} fill={fill} moment="crossing" />
+          <ObolMark size={112} fill={fill} moment="crossing" useRaster />
           {showMark ? (
             <View style={styles.markBlock}>
               <UiText
                 weight="black"
-                style={[styles.wordmark, { color: v.ink, letterSpacing: v.track * 10 }]}
+                style={[
+                  styles.wordmark,
+                  { color: v.ink, letterSpacing: v.track * 10, fontFamily: font.display },
+                ]}
               >
                 0bol
               </UiText>

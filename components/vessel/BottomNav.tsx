@@ -6,8 +6,6 @@ import Svg, { Path, Rect, Circle } from "react-native-svg"
 import { useVessel } from "@/providers/VesselTheme"
 import { Label } from "./MonoNum"
 import { pure } from "@/theme/vessel"
-import { useApp } from "@/providers/AppState"
-
 function IconHome({ c }: { c: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -46,26 +44,19 @@ export function BottomNav() {
   const router = useRouter()
   const pathname = usePathname()
   const { v, isLord } = useVessel()
-  const { say } = useApp()
 
   const go = (path: string) => {
     router.push(path as any)
   }
 
-  const active = (key: string) => {
-    if (key === "home") return pathname === "/" || pathname.endsWith("/index") || pathname.includes("/(app)") && !pathname.includes("live") && !pathname.includes("wallet") && !pathname.includes("profile") && !pathname.includes("send") && !pathname.includes("arena") && pathname.split("/").filter(Boolean).pop() === "index" || pathname.endsWith("(app)")
-    return pathname.includes(key)
-  }
-
   const item = (key: string, label: string, path: string, Icon: typeof IconHome) => {
-    const on = pathname.includes(`/${key}`) || (key === "home" && (pathname === "/" || pathname.match(/\(app\)\/?$/)))
-    // simplify home detection
     const isHome =
       key === "home" &&
       (pathname.endsWith("/(app)") ||
         pathname.endsWith("/(app)/") ||
         pathname.endsWith("/index") ||
-        pathname === "/(app)/index")
+        pathname === "/(app)/index" ||
+        pathname === "/")
     const lit = key === "home" ? isHome : pathname.includes(key)
     const c = lit ? v.ink : v.faint
     return (

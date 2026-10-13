@@ -10,7 +10,7 @@ import {
   Row,
 } from "@/components/vessel"
 import { useVessel } from "@/providers/VesselTheme"
-import { pure, space } from "@/theme/vessel"
+import { font, pure, space } from "@/theme/vessel"
 
 const PROPS = [
   {
@@ -43,8 +43,8 @@ export default function Welcome() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.top}>
-          <ObolMark size={72} fill={0.72} moment="idle" />
-          <UiText weight="black" style={[styles.wordmark, { color: v.ink }]}>
+          <ObolMark size={72} fill={0.72} moment="idle" useRaster />
+          <UiText weight="black" style={[styles.wordmark, { color: v.ink, fontFamily: font.display }]}>
             0bol
           </UiText>
           <Label style={{ color: pure.amber, letterSpacing: 3, marginTop: 8 }}>

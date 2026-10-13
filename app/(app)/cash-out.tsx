@@ -31,7 +31,7 @@ export default function CashOutScreen() {
       <VesselScreen>
         <ScreenHeader title="Cash Out" onBack={() => router.back()} />
         <View style={styles.locked}>
-          <ObolMark size={80} fill={0.9} moment="milled" />
+          <ObolMark size={80} fill={0.9} moment="milled" useRaster />
           <Label style={{ textAlign: "center", color: v.amb, marginTop: 18 }}>
             LORDS PUT IN. NOTHING COMES OUT.
           </Label>
@@ -57,7 +57,7 @@ export default function CashOutScreen() {
     <VesselScreen>
       <ScreenHeader title="Cash Out" onBack={() => router.back()} />
       <View style={{ alignItems: "center", marginTop: 8 }}>
-        <ObolMark size={72} fill={0.4} moment="crossing" />
+        <ObolMark size={72} fill={0.4} moment="crossing" useRaster />
       </View>
       <Label style={{ marginTop: 12 }}>RELEASING FROM ESCROW</Label>
       <MonoNum style={{ fontSize: 36, color: v.lim, marginTop: 8 }}>

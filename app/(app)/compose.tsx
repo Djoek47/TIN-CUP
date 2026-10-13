@@ -98,7 +98,7 @@ export default function ComposeScreen() {
             onChangeText={setTitle}
             placeholder="What do you need?"
             placeholderTextColor={v.faint}
-            style={[styles.input, { color: v.ink, borderColor: v.line }]}
+            style={[styles.input, { color: v.ink, borderColor: v.line, borderRadius: v.rad }]}
           />
           <Label style={{ marginTop: 18 }}>STORY</Label>
           <TextInput
@@ -107,14 +107,14 @@ export default function ComposeScreen() {
             placeholder="Keep it legal & fun."
             placeholderTextColor={v.faint}
             multiline
-            style={[styles.input, styles.area, { color: v.ink, borderColor: v.line }]}
+            style={[styles.input, styles.area, { color: v.ink, borderColor: v.line, borderRadius: v.rad }]}
           />
           <Label style={{ marginTop: 18 }}>GOAL (USD)</Label>
           <TextInput
             value={goalAmt}
             onChangeText={setGoalAmt}
             keyboardType="numeric"
-            style={[styles.input, { color: v.ink, borderColor: v.line }]}
+            style={[styles.input, { color: v.ink, borderColor: v.line, borderRadius: v.rad }]}
           />
 
           <Hairline />
@@ -127,7 +127,10 @@ export default function ComposeScreen() {
           {mediaUri ? (
             <Image source={{ uri: mediaUri }} style={styles.preview} />
           ) : (
-            <Pressable onPress={attachPhoto} style={[styles.previewEmpty, { borderColor: v.line }]}>
+            <Pressable
+              onPress={attachPhoto}
+              style={[styles.previewEmpty, { borderColor: v.line, borderRadius: v.rad }]}
+            >
               <UiText weight="reg" style={{ color: v.dim, textAlign: "center" }}>
                 Tap to add a photo or video
               </UiText>
@@ -150,7 +153,6 @@ const styles = StyleSheet.create({
   input: {
     marginTop: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
@@ -160,7 +162,6 @@ const styles = StyleSheet.create({
   previewEmpty: {
     marginTop: 16,
     height: 140,
-    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",

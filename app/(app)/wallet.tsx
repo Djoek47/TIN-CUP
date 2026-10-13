@@ -48,7 +48,7 @@ export default function WalletScreen() {
       />
       <ScrollView showsVerticalScrollIndicator={false}>
         <Row style={{ alignItems: "center", gap: 18, marginTop: 8 }}>
-          <ObolMark size={88} fill={fill} moment="idle" />
+          <ObolMark size={88} fill={fill} moment="idle" useRaster />
           <View style={{ flex: 1 }}>
             <Label>TOTAL GOLD (REFERENCE)</Label>
             <MonoNum style={{ fontSize: 28, marginTop: 6 }}>

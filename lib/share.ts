@@ -26,13 +26,13 @@ export function generateProfileDeepLink(walletAddress: string): string {
 // Generate shareable message for a beg
 export function generateBegShareMessage(title: string, begId: string): string {
   const deepLink = generateBegDeepLink(begId)
-  return `Check out this beg on Obol: "${title}"\n\n${deepLink}`
+  return `Check out this beg on 0bol: "${title}"\n\n${deepLink}`
 }
 
 // Generate shareable message for a profile
 export function generateProfileShareMessage(displayName: string, walletAddress: string): string {
   const deepLink = generateProfileDeepLink(walletAddress)
-  return `Follow ${displayName} on Obol\n\n${deepLink}`
+  return `Follow ${displayName} on 0bol\n\n${deepLink}`
 }
 
 // Share to social/email using native share

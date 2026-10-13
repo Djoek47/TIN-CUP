@@ -8,7 +8,7 @@ import {
   Label,
 } from "@/components/vessel"
 import { useVessel } from "@/providers/VesselTheme"
-import { pure, space } from "@/theme/vessel"
+import { font, pure, space } from "@/theme/vessel"
 
 /** Coronation — you are now Lord → enter app */
 export default function Coronation() {
@@ -19,7 +19,7 @@ export default function Coronation() {
     <VesselScreen nav={false}>
       <View style={styles.root}>
         <View style={styles.hero}>
-          <ObolMark size={108} fill={1} moment="idle" />
+          <ObolMark size={108} fill={1} moment="idle" useRaster />
           <Label style={{ color: pure.amber, letterSpacing: 4, marginTop: 28 }}>
             YOU ARE NOW
           </Label>
@@ -30,6 +30,7 @@ export default function Coronation() {
               color: pure.amber,
               letterSpacing: 2,
               marginTop: 8,
+              fontFamily: font.display,
             }}
           >
             LORD

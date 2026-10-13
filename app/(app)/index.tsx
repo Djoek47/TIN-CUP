@@ -38,7 +38,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         <Row style={styles.top}>
           <Row style={{ gap: 9, flex: 1 }}>
-            <UiText weight="black" style={{ fontSize: 15, letterSpacing: isLord ? 7 : 4.5 }}>
+            <UiText weight="black" style={{ fontSize: 16, letterSpacing: isLord ? 6 : 3.5 }}>
               0bol
             </UiText>
             <View

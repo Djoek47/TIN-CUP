@@ -1,4 +1,4 @@
-# Obol
+# 0bol
 
 > A coin for the crossing.
 

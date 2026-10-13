@@ -89,7 +89,7 @@ export default function NotificationsScreen() {
       >
         {!rows.length ? (
           <Label style={{ marginTop: 40, textAlign: "center", color: v.dim }}>
-            No town crier messages yet
+            No notifications yet
           </Label>
         ) : (
           rows.map((n) => (
@@ -97,8 +97,17 @@ export default function NotificationsScreen() {
               <Hairline />
               <Pressable
                 onPress={() => {
-                  if (n.kind === "deposit" || n.kind === "cashout" || n.kind === "gift") {
+                  if (
+                    n.kind === "deposit" ||
+                    n.kind === "cashout" ||
+                    n.kind === "gift" ||
+                    n.kind === "bounty"
+                  ) {
                     router.push("/(app)/wallet")
+                  } else if (n.kind === "challenge") {
+                    router.push("/(app)/arena")
+                  } else if (n.kind === "system") {
+                    router.push("/(app)/settings")
                   }
                 }}
                 style={styles.row}

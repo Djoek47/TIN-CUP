@@ -84,7 +84,7 @@ export const SEED_LEDGER: LedgerEntry[] = [
   {
     id: "1",
     dir: "in",
-    who: "@maverick",
+    who: "@baron",
     gold_mg: seedFromUsd(250),
     fiat_cents: 25000,
     currency: "USD",

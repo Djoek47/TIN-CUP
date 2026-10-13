@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { Animated, View, StyleSheet, Image, ImageSourcePropType } from "react-native"
 import Svg, { Circle, Path, Defs, LinearGradient, Stop, G, Line } from "react-native-svg"
-import { pure } from "@/theme/vessel"
+import { font, pure } from "@/theme/vessel"
 import { useVessel } from "@/providers/VesselTheme"
 
 export type ObolMoment = "idle" | "arrival" | "handoff" | "crossing" | "milled"
@@ -145,22 +145,22 @@ export function ObolMark({ size = 72, fill = 0.55, moment = "idle", useRaster = 
   )
 }
 
-/** Compact wordmark row: mark + OBOL */
+/** Compact wordmark row: mark + 0bol (App Store / product name) */
 export function ObolWordmark({ size = 40 }: { size?: number }) {
   const { v } = useVessel()
   return (
     <View style={styles.row}>
-      <ObolMark size={size} fill={0.62} moment="idle" />
+      <ObolMark size={size} fill={0.62} moment="idle" useRaster />
       <Animated.Text
         style={{
           marginLeft: 12,
           fontSize: size * 0.55,
-          fontWeight: "900",
-          letterSpacing: 4,
+          fontFamily: font.display,
+          letterSpacing: v.track * 10,
           color: v.ink,
         }}
       >
-        OBOL
+        0bol
       </Animated.Text>
     </View>
   )
