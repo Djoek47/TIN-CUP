@@ -1,6 +1,6 @@
 # 0bol → Apple TestFlight
 
-App Store Connect name: **0bol** · In-app brand: **OBOL** · Bundle ID: `com.obol.app`
+App Store Connect name: **0bol** · In-app brand: **OBOL** · Bundle ID: `com.obol.app` · ASC App ID: `6822289532`
 
 Expo Go is fine for **mock UI** smoke tests. Stripe + thirdweb need a **native iOS binary**.
 
