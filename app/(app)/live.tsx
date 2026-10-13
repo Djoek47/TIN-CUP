@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { View, Pressable, StyleSheet, ScrollView } from "react-native"
-import { useRouter } from "expo-router"
+import { useCallback, useEffect, useState } from "react"
+import { View, Pressable, StyleSheet, ScrollView, RefreshControl } from "react-native"
+import { useLocalSearchParams, useRouter } from "expo-router"
 import {
   VesselScreen,
   Label,
@@ -8,64 +8,99 @@ import {
   MonoNum,
   Row,
   LiveRoom,
+  PrimaryButton,
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { bumpLiveRaised, listLiveSessions, type LiveSession } from "@/lib/live-sessions"
 import { fmtUsd } from "@/lib/money"
-import { motion, pure, space } from "@/theme/vessel"
+import { space } from "@/theme/vessel"
 
 const GIFTS = [10, 50, 100, 250, 500]
-const SEED_CHAT = [
-  { who: "@zed", t: "Let's go Luna" },
-  { who: "@stella", t: "Goal almost there" },
-  { who: "@kai", t: "Pouring now" },
-]
 
 export default function LiveScreen() {
   const router = useRouter()
-  const { v } = useVessel()
-  const { gift, say } = useApp()
-  const [secs, setSecs] = useState(14 * 60 + 32)
-  const [raised, setRaised] = useState(1235)
-  const goal = 2000
-  const [chat, setChat] = useState(SEED_CHAT)
-  const [burst, setBurst] = useState<number | null>(null)
+  const { v, isLord } = useVessel()
+  const { gift, say, user } = useApp()
+  const params = useLocalSearchParams<{ host?: string; title?: string }>()
+  const [sessions, setSessions] = useState<LiveSession[]>([])
+  const [refreshing, setRefreshing] = useState(false)
+  const [raised, setRaised] = useState(0)
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    const list = await listLiveSessions()
+    setSessions(list)
+    const match = list.find((s) => s.handle === params.host) || list[0]
+    if (match) setRaised(match.raised_cents / 100)
+  }, [params.host])
 
   useEffect(() => {
-    const t = setInterval(() => setSecs((s) => s + 1), 1000)
-    return () => clearInterval(t)
-  }, [])
+    load()
+  }, [load])
 
-  useEffect(() => {
-    const lines = ["Fire 🔥", "You got this", "Sending love", "Almost at goal", "Iconic"]
-    const t = setInterval(() => {
-      const who = ["@ace", "@nova", "@phantom", "@kingx"][Math.floor(Math.random() * 4)]
-      setChat((c) => [...c.slice(-4), { who, t: lines[Math.floor(Math.random() * lines.length)] }])
-    }, motion.chatTickMs)
-    return () => clearInterval(t)
-  }, [])
-
-  const mm = String(Math.floor(secs / 60)).padStart(2, "0")
-  const ss = String(secs % 60).padStart(2, "0")
-  const pct = Math.min(100, Math.round((raised / goal) * 100))
+  const active = sessions.find((s) => s.handle === params.host) || sessions[0]
+  const host = active?.handle || params.host || ""
+  const title = active?.title || params.title || "Live"
+  const goal = (active?.goal_cents || 0) / 100
+  const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0
+  const peerHandle = host ? `@${host}` : ""
 
   const onGift = async (amount: number) => {
+    if (busy || !host || !peerHandle) return
+    setBusy(true)
     try {
-      await gift("@dusty", amount)
+      await gift(peerHandle, amount)
       setRaised((r) => r + amount)
-      setBurst(amount)
+      if (active?.host_id) await bumpLiveRaised(active.host_id, amount * 100)
       say(`$${amount} poured`)
-      setTimeout(() => setBurst(null), motion.giftBurstMs)
     } catch {
-      /* toast via gift */
+      /* toast */
+    } finally {
+      setBusy(false)
     }
+  }
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
+
+  if (!sessions.length && !params.host) {
+    return (
+      <VesselScreen>
+        <Row style={{ paddingHorizontal: space.screenPad, paddingTop: 8, alignItems: "center" }}>
+          <Pressable onPress={() => router.back()}>
+            <UiText style={{ fontSize: 22 }}>‹</UiText>
+          </Pressable>
+          <Label style={{ flex: 1, textAlign: "center" }}>LIVE</Label>
+          <View style={{ width: 22 }} />
+        </Row>
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: space.screenPad }}>
+          <Label style={{ color: v.dim, textAlign: "center" }}>NO ONE IS LIVE</Label>
+          <UiText weight="reg" style={{ color: v.dim, textAlign: "center", marginTop: 12, lineHeight: 20 }}>
+            When a vagrant starts Apple camera broadcast, they appear here.
+          </UiText>
+          {!isLord ? (
+            <View style={{ marginTop: 24 }}>
+              <PrimaryButton title="GO LIVE" tone="lim" onPress={() => router.push("/(app)/golive")} />
+            </View>
+          ) : (
+            <View style={{ marginTop: 24 }}>
+              <PrimaryButton title="POUR GOLD ANYWAY" onPress={() => router.push("/(app)/send")} />
+            </View>
+          )}
+        </View>
+      </VesselScreen>
+    )
   }
 
   return (
     <VesselScreen pad={false}>
       <View style={{ flex: 1 }}>
         <View style={[styles.frame, { backgroundColor: v.surf }]}>
-          <LiveRoom mode="subscribe" identity="viewer" />
+          <LiveRoom mode="subscribe" identity={host || "host"} />
         </View>
 
         <View style={[styles.top, { paddingHorizontal: space.screenPad }]}>
@@ -75,9 +110,9 @@ export default function LiveScreen() {
           <Row style={{ gap: 8, alignItems: "center" }}>
             <View style={[styles.live, { borderRadius: v.radPill }]}>
               <View style={[styles.dot, { backgroundColor: v.limfill }]} />
-              <Label style={{ color: "#fff" }}>LIVE {mm}:{ss}</Label>
+              <Label style={{ color: "#fff" }}>LIVE</Label>
             </View>
-            <Label>2.4K</Label>
+            <Label>@{host}</Label>
           </Row>
           <Pressable onPress={() => router.push("/(app)/send")}>
             <Label style={{ color: v.amb }}>GIVE</Label>
@@ -85,53 +120,35 @@ export default function LiveScreen() {
         </View>
 
         <View style={[styles.goal, { paddingHorizontal: space.screenPad }]}>
+          <UiText weight="semi" style={{ fontSize: 14, marginBottom: 6 }}>
+            {title}
+          </UiText>
           <Row style={{ justifyContent: "space-between" }}>
-            <MonoNum style={{ color: v.lim, fontSize: 18 }}>{fmtUsd(raised, { cents: false })} RAISED</MonoNum>
-            <Label>GOAL {fmtUsd(goal, { cents: false })}</Label>
+            <MonoNum style={{ color: v.lim, fontSize: 18 }}>
+              {fmtUsd(raised, { cents: false })} RAISED
+            </MonoNum>
+            <Label>GOAL {fmtUsd(goal || 0, { cents: false })}</Label>
           </Row>
           <View style={[styles.track, { backgroundColor: v.line }]}>
             <View style={{ width: `${pct}%`, height: "100%", backgroundColor: v.limfill }} />
           </View>
         </View>
 
-        <View style={styles.chatWrap}>
-          {chat.map((m, i) => (
-            <View key={`${m.who}-${i}`} style={styles.chatLine}>
-              <Label style={{ color: v.amb }}>{m.who}</Label>
-              <UiText weight="reg" style={{ fontSize: 13, marginLeft: 8 }}>
-                {m.t}
-              </UiText>
-            </View>
-          ))}
-        </View>
-
-        {burst != null ? (
-          <View style={styles.burst} pointerEvents="none">
-            <MonoNum style={{ color: pure.amber, fontSize: 42 }}>${burst}</MonoNum>
-            <Label style={{ color: pure.amber }}>POURED</Label>
-          </View>
-        ) : null}
-
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.gifts, { paddingHorizontal: space.screenPad }]}
-          style={styles.giftRail}
+          style={styles.gifts}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: space.screenPad }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={v.amb} />}
         >
           {GIFTS.map((g) => (
             <Pressable
               key={g}
+              disabled={busy || !host || host === user.handle}
               onPress={() => onGift(g)}
-              style={[
-                styles.pill,
-                {
-                  borderRadius: v.radPill,
-                  borderColor: g === 250 ? v.amb : v.line,
-                  backgroundColor: g === 250 ? v.ambfill : "transparent",
-                },
-              ]}
+              style={[styles.gift, { borderColor: v.amb, borderRadius: v.radPill }]}
             >
-              <MonoNum style={{ color: g === 250 ? pure.fillInk : v.ink, fontSize: 13 }}>${g}</MonoNum>
+              <MonoNum style={{ color: v.amb, fontSize: 14 }}>${g}</MonoNum>
             </Pressable>
           ))}
         </ScrollView>
@@ -141,7 +158,7 @@ export default function LiveScreen() {
 }
 
 const styles = StyleSheet.create({
-  frame: { flex: 1, alignItems: "center", justifyContent: "center" },
+  frame: { ...StyleSheet.absoluteFill },
   top: {
     position: "absolute",
     top: 12,
@@ -156,29 +173,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "rgba(4,4,6,0.55)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
+    paddingVertical: 6,
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
-  dot: { width: 5, height: 5, borderRadius: 3 },
-  goal: { position: "absolute", top: 56, left: 0, right: 0 },
-  track: { height: 2, marginTop: 8, borderRadius: 2, overflow: "hidden" },
-  chatWrap: { position: "absolute", left: 22, right: 100, bottom: 100, gap: 8 },
-  chatLine: { flexDirection: "row", alignItems: "center" },
-  giftRail: { position: "absolute", bottom: 16, left: 0, right: 0 },
-  gifts: { gap: 8, alignItems: "center" },
-  pill: {
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  goal: { position: "absolute", left: 0, right: 0, bottom: 100 },
+  track: { height: 3, marginTop: 8, borderRadius: 2, overflow: "hidden" },
+  gifts: { position: "absolute", left: 0, right: 0, bottom: 28, maxHeight: 52 },
+  gift: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    minWidth: 64,
-    alignItems: "center",
-  },
-  burst: {
-    ...StyleSheet.absoluteFill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
 })

@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { View, Pressable, StyleSheet, ScrollView, Alert } from "react-native"
-import { useRouter } from "expo-router"
+import { useCallback, useState } from "react"
+import { View, Pressable, StyleSheet, ScrollView, Alert, RefreshControl } from "react-native"
+import { useFocusEffect, useRouter } from "expo-router"
 import {
   VesselScreen,
   ScreenHeader,
@@ -13,53 +13,12 @@ import {
 } from "@/components/vessel"
 import { useVessel } from "@/providers/VesselTheme"
 import { useApp } from "@/providers/AppState"
+import { CHALLENGES } from "@/lib/challenges"
+import { listLiveSessions, type LiveSession } from "@/lib/live-sessions"
+import { fmtUsd } from "@/lib/money"
 import { space } from "@/theme/vessel"
 
 const TABS = ["Challenges", "Roulette", "Events"] as const
-
-const ARENAS = [
-  {
-    k: "FEATURED · 4,102 ENTERED",
-    t: "Spicy Truth",
-    s: "Eat a ghost pepper in 60 seconds.",
-    r: "$250",
-    fund: 250,
-    entry: 5,
-    c: "02:15:42",
-    vagrant: "ENTER CHALLENGE",
-    lord: "FUND THIS BOUNTY",
-    challengeId: "1",
-  },
-  {
-    k: "ROULETTE · SPINS EVERY 5 MIN",
-    t: "Blind Give",
-    s: "Random stranger. Random amount. No takebacks.",
-    r: "$25–$500",
-    fund: 100,
-    entry: 5,
-    c: "00:04:18",
-    vagrant: "ENTER CHALLENGE",
-    lord: "FUND THIS BOUNTY",
-    challengeId: "2",
-  },
-  {
-    k: "EVENT · STARTS SATURDAY",
-    t: "Midnight Marathon",
-    s: "Six hours live. Highest total takes the pot.",
-    r: "$5,000",
-    fund: 500,
-    entry: 10,
-    c: "2D 06:00",
-    vagrant: "ENTER CHALLENGE",
-    lord: "FUND THIS BOUNTY",
-    challengeId: "3",
-  },
-]
-
-const LIVE_LIST = [
-  { t: "Dance in public", r: "$120", c: "01:45:12", path: "/(app)/live" as const },
-  { t: "Sing your ex a song", r: "$80", c: "00:52:03", path: "/(app)/live" as const },
-]
 
 export default function ArenaScreen() {
   const router = useRouter()
@@ -67,21 +26,40 @@ export default function ArenaScreen() {
   const { enterChallenge, fundBounty, say } = useApp()
   const [tab, setTab] = useState(0)
   const [busy, setBusy] = useState(false)
-  const A = ARENAS[tab]
-  const cta = isLord ? A.lord : A.vagrant
+  const [live, setLive] = useState<LiveSession[]>([])
+  const [refreshing, setRefreshing] = useState(false)
+
+  const A = CHALLENGES[tab] ?? CHALLENGES[0]
+  const cta = isLord ? "FUND THIS BOUNTY" : "ENTER CHALLENGE"
+
+  const loadLive = useCallback(async () => {
+    setLive(await listLiveSessions())
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      loadLive()
+    }, [loadLive]),
+  )
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await loadLive()
+    setRefreshing(false)
+  }
 
   const onCta = async () => {
     if (busy) return
     setBusy(true)
     try {
       if (isLord) {
-        await fundBounty(A.t, A.fund)
-        Alert.alert("Bounty funded", `${A.t} · $${A.fund} held in mock escrow.`)
+        await fundBounty(A.title, A.fundUsd)
+        Alert.alert("Bounty funded", `${A.title} · $${A.fundUsd} held in mock escrow.`)
         router.push("/(app)/wallet")
       } else {
-        await enterChallenge(A.t, A.entry)
-        Alert.alert("You're in", `Stake $${A.entry} held. Record & post to claim.`)
-        router.push({ pathname: "/challenge-details", params: { id: A.challengeId } })
+        await enterChallenge(A.title, A.entryUsd)
+        Alert.alert("You're in", `Stake $${A.entryUsd} held. Record & post to claim.`)
+        router.push({ pathname: "/challenge-details", params: { id: A.id } })
       }
     } catch (e: any) {
       say(e?.message || "Action failed")
@@ -112,29 +90,33 @@ export default function ArenaScreen() {
         ))}
       </Row>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={v.amb} />}
+      >
         <Pressable
           onPress={() =>
-            router.push({ pathname: "/challenge-details", params: { id: A.challengeId } })
+            router.push({ pathname: "/challenge-details", params: { id: A.id } })
           }
         >
-          <Label style={{ marginTop: space.sectionGap }}>{A.k}</Label>
+          <Label style={{ marginTop: space.sectionGap }}>{A.kicker}</Label>
           <UiText weight="black" style={{ fontSize: 28, marginTop: 10 }}>
-            {A.t}
+            {A.title}
           </UiText>
           <UiText weight="reg" style={{ color: v.dim, fontSize: 14, marginTop: 8, lineHeight: 20 }}>
-            {A.s}
+            {A.summary}
           </UiText>
         </Pressable>
 
         <Row style={{ marginTop: 22, justifyContent: "space-between" }}>
           <View>
             <Label>REWARD</Label>
-            <MonoNum style={{ color: v.amb, fontSize: 22, marginTop: 4 }}>{A.r}</MonoNum>
+            <MonoNum style={{ color: v.amb, fontSize: 22, marginTop: 4 }}>{A.rewardLabel}</MonoNum>
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Label>ENDS IN</Label>
-            <MonoNum style={{ fontSize: 22, marginTop: 4 }}>{A.c}</MonoNum>
+            <MonoNum style={{ fontSize: 22, marginTop: 4 }}>{A.endsIn}</MonoNum>
           </View>
         </Row>
 
@@ -143,25 +125,41 @@ export default function ArenaScreen() {
         </View>
         <Label style={{ marginTop: 10, textAlign: "center", color: v.faint }}>
           {isLord
-            ? `Funds $${A.fund} from available → bounty escrow`
-            : `Entry stake $${A.entry} held · then record via compose / go live`}
+            ? `Funds $${A.fundUsd} from available → bounty escrow`
+            : `Entry stake $${A.entryUsd} held · then record via compose / go live`}
         </Label>
 
         <Label style={{ marginTop: space.sectionGap }}>Live Now</Label>
-        {LIVE_LIST.map((item) => (
-          <Pressable key={item.t} onPress={() => router.push(item.path)}>
-            <Hairline />
-            <Row style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <UiText weight="semi" style={{ fontSize: 14 }}>
-                  {item.t}
-                </UiText>
-                <Label style={{ marginTop: 4 }}>{item.c}</Label>
-              </View>
-              <MonoNum style={{ color: v.lim, fontSize: 16 }}>{item.r}</MonoNum>
-            </Row>
-          </Pressable>
-        ))}
+        {live.length ? (
+          live.map((s) => (
+            <Pressable
+              key={s.id}
+              onPress={() =>
+                router.push({
+                  pathname: "/(app)/live",
+                  params: { host: s.handle, title: s.title },
+                } as any)
+              }
+            >
+              <Hairline />
+              <Row style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <UiText weight="semi" style={{ fontSize: 14 }}>
+                    @{s.handle}
+                  </UiText>
+                  <Label style={{ marginTop: 4 }}>{s.title}</Label>
+                </View>
+                <MonoNum style={{ color: v.lim, fontSize: 16 }}>
+                  {fmtUsd(s.goal_cents / 100, { cents: false })}
+                </MonoNum>
+              </Row>
+            </Pressable>
+          ))
+        ) : (
+          <UiText weight="reg" style={{ color: v.dim, marginTop: 12, lineHeight: 18 }}>
+            Nobody is on Apple camera. Go live from Home to appear here.
+          </UiText>
+        )}
       </ScrollView>
     </VesselScreen>
   )

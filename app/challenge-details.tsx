@@ -13,7 +13,7 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
-import { CHALLENGES } from "@/lib/make-data"
+import { challengeById } from "@/lib/challenges"
 import { space } from "@/theme/vessel"
 
 const RULES = [
@@ -32,24 +32,20 @@ export default function ChallengeDetailsScreen() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
-  const challenge = useMemo(() => {
-    const n = Number(id)
-    return CHALLENGES.find((c) => c.id === n) ?? CHALLENGES[0]
-  }, [id])
-
-  const bountyUsd = Math.max(25, Math.round(challenge.bounty / 10))
-  const entryUsd = 5
+  const challenge = useMemo(() => challengeById(id), [id])
+  const bountyUsd = challenge.fundUsd
+  const entryUsd = challenge.entryUsd
 
   const onPrimary = async () => {
     if (busy) return
     setBusy(true)
     try {
       if (isLord) {
-        await fundBounty(challenge.task, bountyUsd)
+        await fundBounty(challenge.title, bountyUsd)
         setDone(true)
         Alert.alert("Bounty funded", `$${bountyUsd} held in mock escrow.`)
       } else {
-        await enterChallenge(challenge.task, entryUsd)
+        await enterChallenge(challenge.title, entryUsd)
         setDone(true)
         Alert.alert("Entered", "Stake held. Record via go-live or compose.")
       }
@@ -64,16 +60,16 @@ export default function ChallengeDetailsScreen() {
     <VesselScreen nav={false}>
       <ScreenHeader title="Bounty" onBack={() => router.back()} />
       <Label style={{ marginTop: 8 }}>
-        BOUNTY · {challenge.deadline} remaining · {challenge.participants} attempting
+        BOUNTY · {challenge.endsIn} remaining · {challenge.kicker}
       </Label>
       <MonoNum style={{ color: v.amb, fontSize: 36, marginTop: 14 }}>
         ${bountyUsd.toLocaleString()}
       </MonoNum>
-      <Label style={{ marginTop: 4 }}>TO THE WINNER (MOCK)</Label>
+      <Label style={{ marginTop: 4 }}>TO THE WINNER (MOCK GOLD)</Label>
       <UiText weight="black" style={{ fontSize: 22, marginTop: 18 }}>
         {challenge.task}
       </UiText>
-      <Label style={{ marginTop: 10, color: v.dim }}>Posted by {challenge.lord}</Label>
+      <Label style={{ marginTop: 10, color: v.dim }}>@{challenge.hostHandle}</Label>
 
       <Label style={{ marginTop: space.sectionGap }}>RULES</Label>
       <Hairline />

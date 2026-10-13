@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { View, Pressable, StyleSheet } from "react-native"
+import { View, Pressable, StyleSheet, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -12,7 +12,9 @@ import {
   MonoNum,
   Row,
 } from "@/components/vessel"
+import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { startLiveSession } from "@/lib/live-sessions"
 import { motion, space } from "@/theme/vessel"
 
 const CATEGORIES = ["STORY", "MUSIC", "CHALLENGE", "ASK"]
@@ -22,9 +24,11 @@ const GOALS = [500, 1000, 2000, 5000]
 export default function GoLiveScreen() {
   const router = useRouter()
   const { v, isLord } = useVessel()
+  const { user, say } = useApp()
   const [cat, setCat] = useState(0)
   const [aud, setAud] = useState(0)
   const [goal, setGoal] = useState(2)
+  const [busy, setBusy] = useState(false)
 
   if (isLord) {
     return (
@@ -45,11 +49,38 @@ export default function GoLiveScreen() {
     )
   }
 
+  const start = async () => {
+    if (busy) return
+    if (!user.address) {
+      Alert.alert("Connect required", "Connect an account before going live.")
+      return
+    }
+    setBusy(true)
+    try {
+      const title = `${CATEGORIES[cat]} · ${user.displayName}`
+      const session = await startLiveSession({
+        hostId: user.address,
+        handle: user.handle,
+        title,
+        goalUsd: GOALS[goal],
+        category: CATEGORIES[cat],
+        audience: AUDIENCES[aud],
+      })
+      if (!session) say("Live lobby sync deferred — camera still opens")
+      router.replace({
+        pathname: "/(app)/broadcast",
+        params: { title, goal: String(GOALS[goal]) },
+      } as any)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <VesselScreen nav={false}>
       <ScreenHeader title="Go Live" onBack={() => router.back()} />
       <View style={{ height: 220, borderRadius: v.rad, overflow: "hidden" }}>
-        <LiveRoom mode="publish" room="obol-preview" identity="preview" />
+        <LiveRoom mode="publish" identity={user.handle || "preview"} />
       </View>
       <UiText weight="black" style={{ fontSize: 28, marginTop: 22, lineHeight: 34 }}>
         What's your{"\n"}moment?
@@ -76,10 +107,12 @@ export default function GoLiveScreen() {
       <HoldButton
         label="HOLD TO GO LIVE"
         durationMs={motion.holdGoLiveMs}
-        onComplete={() => router.replace("/(app)/broadcast" as any)}
+        onComplete={start}
         accent="lim"
       />
-      <Label style={{ textAlign: "center", marginTop: 12 }}>HOLD {motion.holdGoLiveMs / 1000}S TO START</Label>
+      <Label style={{ textAlign: "center", marginTop: 12 }}>
+        APPLE CAMERA · HOLD {motion.holdGoLiveMs / 1000}S
+      </Label>
     </VesselScreen>
   )
 }

@@ -21,10 +21,10 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "We need access to your camera to capture profile photos",
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to choose images",
-        "NSPhotoLibraryAddUsageDescription": "We need to save photos to your library",
-        "NSMicrophoneUsageDescription": "We need microphone access for video recording (optional)"
+        "NSCameraUsageDescription": "0bol uses the camera so you can go live and capture profile photos.",
+        "NSPhotoLibraryUsageDescription": "0bol needs photo library access to choose profile images.",
+        "NSPhotoLibraryAddUsageDescription": "0bol may save photos you capture to your library.",
+        "NSMicrophoneUsageDescription": "0bol uses the microphone when you go live or record video."
       }
     },
     "android": {

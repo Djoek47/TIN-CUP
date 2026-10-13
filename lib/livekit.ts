@@ -1,26 +1,15 @@
 /**
- * Live video helper — LiveKit when configured, else camera/placeholder.
- * Secrets never required in the client for MVP; token URL is optional.
+ * @deprecated LiveKit is not used. Live video uses Apple camera via expo-camera.
+ * Kept as no-op stubs so old imports do not break.
  */
 export function livekitConfigured(): boolean {
-  const url = process.env.EXPO_PUBLIC_LIVEKIT_URL ?? ""
-  return Boolean(url) && !url.includes("your_")
+  return false
 }
 
 export function livekitUrl(): string | null {
-  return livekitConfigured() ? (process.env.EXPO_PUBLIC_LIVEKIT_URL as string) : null
+  return null
 }
 
-/** Tonight: token endpoint optional. Without it, UI uses camera fallback. */
-export async function fetchLiveToken(room: string, identity: string): Promise<string | null> {
-  const endpoint = process.env.EXPO_PUBLIC_LIVEKIT_TOKEN_URL
-  if (!endpoint || !livekitConfigured()) return null
-  try {
-    const res = await fetch(`${endpoint}?room=${encodeURIComponent(room)}&identity=${encodeURIComponent(identity)}`)
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.token ?? null
-  } catch {
-    return null
-  }
+export async function fetchLiveToken(_room: string, _identity: string): Promise<string | null> {
+  return null
 }

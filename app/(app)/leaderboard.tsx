@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { ScrollView, View, Pressable, StyleSheet } from "react-native"
-import { useRouter } from "expo-router"
+import { useCallback, useState } from "react"
+import { ScrollView, View, Pressable, StyleSheet, RefreshControl } from "react-native"
+import { useFocusEffect, useRouter } from "expo-router"
 import {
   VesselScreen,
   ScreenHeader,
@@ -10,134 +10,116 @@ import {
   Hairline,
   Row,
 } from "@/components/vessel"
+import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
-import { pure, space } from "@/theme/vessel"
-
-const PERIODS = ["DAY", "WEEK", "MONTH", "ALL"] as const
-
-const DATA = [
-  {
-    podium: [
-      { n: "@nova", a: "$1.2K" },
-      { n: "@kai", a: "$1.8K" },
-      { n: "@zed", a: "$0.9K" },
-    ],
-    list: [
-      { n: "@ace", a: "$720" },
-      { n: "@luna", a: "$580" },
-      { n: "@phantom", a: "$430" },
-      { n: "@stella", a: "$360" },
-      { n: "@kingx", a: "$320" },
-    ],
-    yr: "31",
-    ya: "$95",
-  },
-  {
-    podium: [
-      { n: "@kingx", a: "$4.1K" },
-      { n: "@stella", a: "$6.7K" },
-      { n: "@zed", a: "$3.2K" },
-    ],
-    list: [
-      { n: "@kai", a: "$2.9K" },
-      { n: "@nova", a: "$2.1K" },
-      { n: "@ace", a: "$1.8K" },
-      { n: "@luna", a: "$1.4K" },
-      { n: "@phantom", a: "$1.1K" },
-    ],
-    yr: "18",
-    ya: "$640",
-  },
-  {
-    podium: [
-      { n: "@stella", a: "$12K" },
-      { n: "@kai", a: "$18K" },
-      { n: "@kingx", a: "$9.4K" },
-    ],
-    list: [
-      { n: "@zed", a: "$7.2K" },
-      { n: "@nova", a: "$6.1K" },
-      { n: "@ace", a: "$4.8K" },
-      { n: "@luna", a: "$3.9K" },
-      { n: "@phantom", a: "$3.1K" },
-    ],
-    yr: "12",
-    ya: "$2.1K",
-  },
-  {
-    podium: [
-      { n: "@zed", a: "$42K" },
-      { n: "@kai", a: "$61K" },
-      { n: "@stella", a: "$38K" },
-    ],
-    list: [
-      { n: "@kingx", a: "$29K" },
-      { n: "@nova", a: "$24K" },
-      { n: "@ace", a: "$19K" },
-      { n: "@luna", a: "$15K" },
-      { n: "@phantom", a: "$12K" },
-    ],
-    yr: "47",
-    ya: "$8.4K",
-  },
-]
+import { fetchTopGivers } from "@/lib/feed"
+import { fmtCompactUsd } from "@/lib/money"
+import { space } from "@/theme/vessel"
 
 export default function LeaderboardScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const [period, setPeriod] = useState(0)
-  const D = DATA[period]
-  // podium visual order: 2nd, 1st, 3rd
-  const [second, first, third] = [D.podium[0], D.podium[1], D.podium[2]]
+  const { user, ledger } = useApp()
+  const [rows, setRows] = useState<{ handle: string; cents: number }[]>([])
+  const [refreshing, setRefreshing] = useState(false)
+
+  const load = useCallback(async () => {
+    const remote = await fetchTopGivers()
+    if (remote.length) {
+      setRows(remote)
+      return
+    }
+    // Local ledger fallback — real gifts/bounties from this device only
+    const tallies: Record<string, number> = {}
+    for (const e of ledger) {
+      if (e.kind !== "gift" && e.kind !== "bounty") continue
+      if (e.dir !== "out") continue
+      const key = user.handle || "you"
+      tallies[key] = (tallies[key] || 0) + Math.round(e.amount * 100)
+    }
+    setRows(
+      Object.entries(tallies)
+        .map(([handle, cents]) => ({ handle, cents }))
+        .sort((a, b) => b.cents - a.cents),
+    )
+  }, [ledger, user.handle])
+
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
+
+  const youCents = rows.find((r) => r.handle === user.handle)?.cents ?? 0
+  const youRank = rows.findIndex((r) => r.handle === user.handle) + 1
+  const podium = rows.slice(0, 3)
+  const rest = rows.slice(3, 12)
 
   return (
     <VesselScreen>
       <ScreenHeader title="Top Givers" onBack={() => router.back()} />
-      <Row style={{ gap: 6, marginTop: 8 }}>
-        {PERIODS.map((p, i) => (
-          <Pressable
-            key={p}
-            onPress={() => setPeriod(i)}
-            style={[
-              styles.period,
-              {
-                borderRadius: v.radPill,
-                backgroundColor: i === period ? v.ambfill : "transparent",
-                borderColor: i === period ? "transparent" : v.line,
-              },
-            ]}
-          >
-            <Label style={{ color: i === period ? pure.fillInk : v.dim }}>{p}</Label>
-          </Pressable>
-        ))}
-      </Row>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={v.amb} />}
+      >
+        <Label style={{ marginTop: 8, color: v.dim }}>
+          Ranked from real gift / bounty ledger rows
+        </Label>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Row style={styles.podium}>
-          <PodiumPlace place={2} name={second.n} amt={second.a} h={96} />
-          <PodiumPlace place={1} name={first.n} amt={first.a} h={150} highlight />
-          <PodiumPlace place={3} name={third.n} amt={third.a} h={70} />
-        </Row>
-
-        {D.list.map((row, i) => (
-          <Pressable key={row.n} onPress={() => router.push("/(app)/send")}>
-            <Hairline />
-            <Row style={styles.row}>
-              <MonoNum style={{ width: 28, color: v.dim }}>{String(i + 4).padStart(2, "0")}</MonoNum>
-              <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
-                {row.n}
-              </UiText>
-              <MonoNum style={{ color: v.amb }}>{row.a}</MonoNum>
+        {!rows.length ? (
+          <UiText weight="reg" style={{ color: v.dim, marginTop: 28, lineHeight: 20 }}>
+            No gifts yet. Pour gold to appear here.
+          </UiText>
+        ) : (
+          <>
+            <Row style={styles.podium}>
+              {[podium[1], podium[0], podium[2]].map((p, i) =>
+                p ? (
+                  <PodiumPlace
+                    key={p.handle}
+                    place={i === 1 ? 1 : i === 0 ? 2 : 3}
+                    name={`@${p.handle}`}
+                    amt={fmtCompactUsd(p.cents / 100)}
+                    h={i === 1 ? 150 : i === 0 ? 96 : 70}
+                    highlight={i === 1}
+                  />
+                ) : (
+                  <View key={`empty-${i}`} style={{ flex: 1 }} />
+                ),
+              )}
             </Row>
-          </Pressable>
-        ))}
+
+            {rest.map((row, i) => (
+              <Pressable key={row.handle} onPress={() => router.push("/(app)/send")}>
+                <Hairline />
+                <Row style={styles.row}>
+                  <MonoNum style={{ width: 28, color: v.dim }}>
+                    {String(i + 4).padStart(2, "0")}
+                  </MonoNum>
+                  <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+                    @{row.handle}
+                  </UiText>
+                  <MonoNum style={{ color: v.amb }}>{fmtCompactUsd(row.cents / 100)}</MonoNum>
+                </Row>
+              </Pressable>
+            ))}
+          </>
+        )}
 
         <View style={[styles.you, { borderColor: v.amb, backgroundColor: v.surf, borderRadius: v.rad }]}>
           <Row style={{ alignItems: "center" }}>
             <Label style={{ color: v.amb }}>YOUR RANK</Label>
             <View style={{ flex: 1 }} />
-            <MonoNum style={{ color: v.amb, marginRight: 12 }}>#{D.yr}</MonoNum>
-            <MonoNum>{D.ya}</MonoNum>
+            <MonoNum style={{ color: v.amb, marginRight: 12 }}>
+              {youRank > 0 ? `#${youRank}` : "—"}
+            </MonoNum>
+            <MonoNum>{fmtCompactUsd(youCents / 100)}</MonoNum>
           </Row>
         </View>
       </ScrollView>
@@ -184,13 +166,7 @@ function PodiumPlace({
 }
 
 const styles = StyleSheet.create({
-  period: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  podium: { alignItems: "flex-end", gap: 12, marginTop: 36, height: 220 },
+  podium: { alignItems: "flex-end", gap: 12, marginTop: 28, height: 220 },
   row: { paddingVertical: space.rowPad, alignItems: "center" },
   you: {
     marginTop: 18,

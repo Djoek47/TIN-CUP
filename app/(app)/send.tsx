@@ -28,11 +28,15 @@ const RECIPIENTS = [
   {
     handle: `@${DEMO_ACCOUNTS.vagrant.user.handle}`,
     name: DEMO_ACCOUNTS.vagrant.user.displayName,
-    sub: "Mock peasant · seeded",
+    sub: "Test vagrant · escrow peer",
     letter: "D",
   },
-  { handle: "@kai", name: "Kai", sub: "kai.creates · LIVE", letter: "K" },
-  { handle: "@luna", name: "Luna", sub: "Rent beg · LIVE", letter: "L" },
+  {
+    handle: `@${DEMO_ACCOUNTS.lord.user.handle}`,
+    name: DEMO_ACCOUNTS.lord.user.displayName,
+    sub: "Test lord · escrow peer",
+    letter: "B",
+  },
 ]
 
 export default function SendScreen() {

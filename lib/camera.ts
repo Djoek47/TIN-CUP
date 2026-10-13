@@ -3,6 +3,17 @@ import { Alert } from "react-native"
 
 export async function requestCameraPermission() {
   try {
+    // Prefer expo-camera (AVFoundation) when available on native
+    try {
+      const cam = require("expo-camera") as typeof import("expo-camera")
+      const api = cam.Camera
+      const cur = await api.getCameraPermissionsAsync()
+      if (cur.granted) return true
+      const next = await api.requestCameraPermissionsAsync()
+      return next.granted
+    } catch {
+      /* fall through to image-picker */
+    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync()
     return status === "granted"
   } catch (e) {

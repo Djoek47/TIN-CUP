@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
-import { ScrollView, View, Pressable, StyleSheet } from "react-native"
-import { useRouter } from "expo-router"
+import { useCallback, useState } from "react"
+import { ScrollView, View, Pressable, StyleSheet, RefreshControl } from "react-native"
+import { useFocusEffect, useRouter } from "expo-router"
 import {
   VesselScreen,
   ImageSlot,
@@ -9,36 +9,62 @@ import {
   MonoNum,
   Hairline,
   Row,
+  PrimaryButton,
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { fetchHomeBundle, type FeedBeg } from "@/lib/feed"
+import type { LiveSession } from "@/lib/live-sessions"
 import { fmtUsd, fmtCompactUsd } from "@/lib/money"
-import { space, pure } from "@/theme/vessel"
-
-const STORIES = [
-  { n: "Luna", l: "TORONTO, CA", i: "L", t: "Rent is due.", s: "Help a girl breathe this month.", r: 1235, g: 2000 },
-  { n: "Stella", l: "LAGOS, NG", i: "S", t: "Last exam fee.", s: "One paper between me and the degree.", r: 640, g: 900 },
-  { n: "Kai", l: "BERLIN, DE", i: "K", t: "Studio rent.", s: "Ten tracks done. Room runs out Friday.", r: 2180, g: 3000 },
-]
-
-const MOMENTS = ["@stella", "@kai", "@luna", "@zed"]
+import { font, space, pure } from "@/theme/vessel"
 
 export default function HomeScreen() {
   const router = useRouter()
   const { v, isLord, caste } = useVessel()
-  const { ledger, moneyBadge } = useApp()
+  const { ledger, moneyBadge, user } = useApp()
+  const [live, setLive] = useState<LiveSession[]>([])
+  const [begs, setBegs] = useState<FeedBeg[]>([])
   const [story, setStory] = useState(0)
-  const H = STORIES[story]
-  const pct = Math.min(100, Math.round((H.r / H.g) * 100))
+  const [refreshing, setRefreshing] = useState(false)
 
-  const activity = useMemo(() => ledger.slice(0, 6), [ledger])
+  const load = useCallback(async () => {
+    const bundle = await fetchHomeBundle()
+    setLive(bundle.live)
+    setBegs(bundle.begs)
+    setStory(0)
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
+
+  const H = begs[story]
+  const pct = H
+    ? Math.min(100, Math.round((H.raised_cents / Math.max(1, H.goal_cents)) * 100))
+    : 0
+  const activity = ledger.slice(0, 6)
 
   return (
     <VesselScreen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={v.amb} />}
+      >
         <Row style={styles.top}>
           <Row style={{ gap: 9, flex: 1 }}>
-            <UiText weight="black" style={{ fontSize: 16, letterSpacing: isLord ? 6 : 3.5 }}>
+            <UiText
+              weight="black"
+              style={{ fontSize: 16, letterSpacing: isLord ? 6 : 3.5, fontFamily: font.display }}
+            >
               0bol
             </UiText>
             <View
@@ -69,113 +95,165 @@ export default function HomeScreen() {
           </Row>
         </Row>
 
-        <Row style={{ gap: 18, marginTop: 16, marginBottom: 14 }}>
-          {STORIES.map((s, i) => (
-            <Pressable key={s.n} onPress={() => setStory(i)}>
-              <Label style={{ color: i === story ? v.ink : v.faint, borderBottomWidth: i === story ? 1 : 0, borderBottomColor: v.ink, paddingBottom: 8 }}>
-                {s.n}
-              </Label>
-            </Pressable>
-          ))}
-        </Row>
+        {live.length ? (
+          <>
+            <Label style={{ marginTop: 18 }}>LIVE NOW</Label>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingTop: 12 }}
+            >
+              {live.map((s) => (
+                <Pressable
+                  key={s.id}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(app)/live",
+                      params: { host: s.handle, title: s.title },
+                    } as any)
+                  }
+                  style={{ width: 120 }}
+                >
+                  <View style={{ position: "relative" }}>
+                    <ImageSlot label={`@${s.handle}`} height={148} radius={14} />
+                    <View
+                      style={[styles.dot, { position: "absolute", top: 8, left: 8, backgroundColor: v.limfill }]}
+                    />
+                  </View>
+                  <Label style={{ marginTop: 7 }}>@{s.handle}</Label>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        ) : (
+          <View style={{ marginTop: 22 }}>
+            <Label>LIVE NOW</Label>
+            <UiText weight="reg" style={{ color: v.dim, marginTop: 8, fontSize: 13, lineHeight: 18 }}>
+              Nobody is on camera. {isLord ? "Pour gold when a vagrant goes live." : "Hold the orb to go live with Apple camera."}
+            </UiText>
+            {!isLord ? (
+              <View style={{ marginTop: 14 }}>
+                <PrimaryButton title="GO LIVE" tone="lim" onPress={() => router.push("/(app)/golive")} />
+              </View>
+            ) : null}
+          </View>
+        )}
 
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/beg-details",
-              params: { name: H.n, title: H.t, story: H.s, raised: String(H.r), goal: String(H.g) },
-            } as any)
-          }
-        >
-          <View style={[styles.hero, { borderRadius: v.rad }]}>
-            <ImageSlot label={`${H.n} · live portrait`} height={360} radius={v.rad} />
-            <View style={styles.heroScrim} pointerEvents="none" />
-            <View style={styles.heroTop}>
-              <View style={[styles.livePill, { borderRadius: v.radPill }]}>
-                <View style={[styles.dot, { backgroundColor: v.limfill }]} />
-                <Label style={{ color: "#fff", fontSize: 9 }}>LIVE</Label>
-              </View>
-              <View style={[styles.livePill, { borderRadius: v.radPill, opacity: 0.9 }]}>
-                <Label style={{ color: "rgba(255,255,255,0.8)", fontSize: 9 }}>2.4K WATCHING</Label>
-              </View>
-            </View>
-            <View style={styles.heroBottom}>
-              <Row style={{ gap: 8, marginBottom: 10 }}>
-                <View style={styles.avatar}>
-                  <Label style={{ color: v.faint }}>{H.i}</Label>
+        <Label style={{ marginTop: space.sectionGap }}>OPEN BEGS</Label>
+        {begs.length ? (
+          <>
+            <Row style={{ gap: 18, marginTop: 12, marginBottom: 14, flexWrap: "wrap" }}>
+              {begs.slice(0, 6).map((s, i) => (
+                <Pressable key={s.id} onPress={() => setStory(i)}>
+                  <Label
+                    style={{
+                      color: i === story ? v.ink : v.faint,
+                      borderBottomWidth: i === story ? 1 : 0,
+                      borderBottomColor: v.ink,
+                      paddingBottom: 8,
+                    }}
+                  >
+                    {s.handle || s.title.slice(0, 12)}
+                  </Label>
+                </Pressable>
+              ))}
+            </Row>
+            {H ? (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/beg-details",
+                    params: {
+                      name: H.handle || "user",
+                      title: H.title,
+                      story: H.story,
+                      raised: String(H.raised_cents / 100),
+                      goal: String(H.goal_cents / 100),
+                    },
+                  } as any)
+                }
+              >
+                <View style={[styles.hero, { borderRadius: v.rad }]}>
+                  <ImageSlot label={`${H.handle || "beg"} · portrait`} height={320} radius={v.rad} />
+                  <View style={styles.heroScrim} pointerEvents="none" />
+                  <View style={styles.heroBottom}>
+                    <UiText weight="bold" style={{ color: "#fff", fontSize: 22, lineHeight: 26 }}>
+                      {H.title}
+                    </UiText>
+                    <UiText
+                      weight="reg"
+                      style={{ color: "rgba(255,255,255,0.62)", fontSize: 14, marginTop: 4 }}
+                    >
+                      {H.story || `@${H.handle || "user"}`}
+                    </UiText>
+                    <Row style={{ justifyContent: "space-between", alignItems: "flex-end", marginTop: 16 }}>
+                      <View>
+                        <Label style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5 }}>RAISED</Label>
+                        <MonoNum style={{ color: v.limfill, fontSize: 26, marginTop: 2 }}>
+                          {fmtUsd(H.raised_cents / 100, { cents: false })}
+                        </MonoNum>
+                      </View>
+                      <Label style={{ color: "rgba(255,255,255,0.45)", paddingBottom: 5 }}>
+                        GOAL {fmtUsd(H.goal_cents / 100, { cents: false })}
+                      </Label>
+                    </Row>
+                    <View style={styles.track}>
+                      <View
+                        style={[styles.fill, { width: `${pct}%`, backgroundColor: v.limfill, shadowColor: v.limfill }]}
+                      />
+                    </View>
+                  </View>
                 </View>
-                <UiText weight="semi" style={{ color: "#fff", fontSize: 13 }}>
-                  {H.n}
-                </UiText>
-                <Label style={{ color: "rgba(255,255,255,0.5)" }}>{H.l}</Label>
-              </Row>
-              <UiText weight="bold" style={{ color: "#fff", fontSize: 24, lineHeight: 28 }}>
-                {H.t}
-              </UiText>
-              <UiText weight="reg" style={{ color: "rgba(255,255,255,0.62)", fontSize: 15, marginTop: 4 }}>
-                {H.s}
-              </UiText>
-              <Row style={{ justifyContent: "space-between", alignItems: "flex-end", marginTop: 16 }}>
-                <View>
-                  <Label style={{ color: "rgba(255,255,255,0.45)", fontSize: 8.5 }}>RECEIVED</Label>
-                  <MonoNum style={{ color: v.limfill, fontSize: 29, marginTop: 2 }}>
-                    {fmtUsd(H.r, { cents: false })}
-                  </MonoNum>
-                </View>
-                <Label style={{ color: "rgba(255,255,255,0.45)", paddingBottom: 5 }}>
-                  GOAL {fmtUsd(H.g, { cents: false })}
-                </Label>
-              </Row>
-              <View style={styles.track}>
-                <View style={[styles.fill, { width: `${pct}%`, backgroundColor: v.limfill, shadowColor: v.limfill }]} />
-              </View>
+              </Pressable>
+            ) : null}
+          </>
+        ) : (
+          <View style={{ marginTop: 12 }}>
+            <UiText weight="reg" style={{ color: v.dim, fontSize: 13, lineHeight: 18 }}>
+              No open begs yet. {user.address ? "Post one from +" : "Connect to post."}
+            </UiText>
+            <View style={{ marginTop: 14 }}>
+              <PrimaryButton title="COMPOSE BEG" onPress={() => router.push("/(app)/compose" as any)} />
             </View>
           </View>
-        </Pressable>
-
-        <Row style={{ marginTop: space.sectionGap, justifyContent: "space-between" }}>
-          <Label>Live Moments</Label>
-          <Pressable onPress={() => router.push("/(app)/activity" as any)}>
-            <Label style={{ color: v.amb }}>SEE ALL</Label>
-          </Pressable>
-        </Row>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 14 }}>
-          {MOMENTS.map((h) => (
-            <Pressable key={h} onPress={() => router.push("/(app)/live")} style={{ width: 112 }}>
-              <View style={{ position: "relative" }}>
-                <ImageSlot label="Clip" height={148} radius={14} />
-                <View style={[styles.dot, { position: "absolute", top: 8, left: 8, backgroundColor: v.limfill }]} />
-              </View>
-              <Label style={{ marginTop: 7 }}>{h}</Label>
-            </Pressable>
-          ))}
-        </ScrollView>
+        )}
 
         <View style={{ marginTop: space.sectionGap }}>
-          <Label style={{ marginBottom: 4 }}>Activity</Label>
-          {activity.map((e) => (
-            <Pressable key={e.id} onPress={() => router.push("/(app)/wallet")}>
-              <Hairline />
-              <Row style={styles.actRow}>
-                <Label style={{ color: e.dir === "in" ? v.lim : v.amb, width: 16 }}>
-                  {e.dir === "in" ? "↓" : "↑"}
-                </Label>
-                <View style={{ flex: 1 }}>
-                  <UiText weight="semi" style={{ fontSize: 13.5 }}>
-                    {e.who}
-                  </UiText>
-                  <Label style={{ marginTop: 2 }}>{e.kind}</Label>
-                </View>
-                <MonoNum style={{ color: e.dir === "in" ? v.lim : v.amb, fontSize: 14 }}>
-                  {e.dir === "in" ? "+" : "−"}
-                  {fmtCompactUsd(e.amount)}
-                </MonoNum>
-              </Row>
+          <Row style={{ justifyContent: "space-between", marginBottom: 4 }}>
+            <Label>Your activity</Label>
+            <Pressable onPress={() => router.push("/(app)/activity" as any)}>
+              <Label style={{ color: v.amb }}>SEE ALL</Label>
             </Pressable>
-          ))}
+          </Row>
+          {activity.length ? (
+            activity.map((e) => (
+              <Pressable key={e.id} onPress={() => router.push("/(app)/wallet")}>
+                <Hairline />
+                <Row style={styles.actRow}>
+                  <Label style={{ color: e.dir === "in" ? v.lim : v.amb, width: 16 }}>
+                    {e.dir === "in" ? "↓" : "↑"}
+                  </Label>
+                  <View style={{ flex: 1 }}>
+                    <UiText weight="semi" style={{ fontSize: 13.5 }}>
+                      {e.who}
+                    </UiText>
+                    <Label style={{ marginTop: 2 }}>{e.kind}</Label>
+                  </View>
+                  <MonoNum style={{ color: e.dir === "in" ? v.lim : v.amb, fontSize: 14 }}>
+                    {e.dir === "in" ? "+" : "−"}
+                    {fmtCompactUsd(e.amount)}
+                  </MonoNum>
+                </Row>
+              </Pressable>
+            ))
+          ) : (
+            <Label style={{ marginTop: 12, color: v.dim }}>No ledger yet</Label>
+          )}
         </View>
 
-        <View style={[styles.moneyStrip, { borderColor: v.line, backgroundColor: v.surf, borderRadius: v.radPill }]}>
+        <View
+          style={[styles.moneyStrip, { borderColor: v.line, backgroundColor: v.surf, borderRadius: v.radPill }]}
+        >
           <Label style={{ color: pure.amber, letterSpacing: 1.5 }}>{moneyBadge}</Label>
         </View>
       </ScrollView>
@@ -186,38 +264,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   top: { alignItems: "center", justifyContent: "space-between", paddingTop: 8 },
   badge: { paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
-  hero: { overflow: "hidden", position: "relative" },
+  hero: { overflow: "hidden", position: "relative", marginTop: 4 },
   heroScrim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "transparent",
     borderBottomWidth: 180,
     borderBottomColor: "rgba(4,4,6,0.92)",
   },
-  heroTop: { position: "absolute", top: 14, left: 14, flexDirection: "row", gap: 7 },
-  livePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: "rgba(4,4,6,0.55)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  dot: { width: 5, height: 5, borderRadius: 3 },
-  heroBottom: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 16 },
-  avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  track: { height: 2, backgroundColor: "rgba(255,255,255,0.16)", marginTop: 9, borderRadius: 2 },
-  fill: { height: "100%", borderRadius: 2, shadowOpacity: 0.9, shadowRadius: 14, shadowOffset: { width: 0, height: 0 } },
+  heroBottom: { position: "absolute", left: 14, right: 14, bottom: 16 },
+  track: { height: 3, backgroundColor: "rgba(255,255,255,0.15)", marginTop: 10, borderRadius: 2, overflow: "hidden" },
+  fill: { height: "100%", shadowOpacity: 0.6, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   actRow: { paddingVertical: space.rowPad, alignItems: "center", gap: 10 },
   moneyStrip: {
     marginTop: 22,
@@ -225,4 +281,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: StyleSheet.hairlineWidth,
   },
+  dot: { width: 8, height: 8, borderRadius: 4 },
 })
