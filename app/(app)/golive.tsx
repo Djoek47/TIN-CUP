@@ -111,7 +111,7 @@ export default function GoLiveScreen() {
         accent="lim"
       />
       <Label style={{ textAlign: "center", marginTop: 12 }}>
-        APPLE CAMERA · HOLD {motion.holdGoLiveMs / 1000}S
+        HOLD {motion.holdGoLiveMs / 1000}S TO START
       </Label>
     </VesselScreen>
   )

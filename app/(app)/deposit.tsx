@@ -25,7 +25,7 @@ import { space } from "@/theme/vessel"
 export default function DepositScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const { deposit, prefs, setPrefs, moneyMode, isMock } = useApp()
+  const { deposit, prefs, setPrefs, moneyMode } = useApp()
   const { initPaymentSheet, presentPaymentSheet } = useStripe()
   const [amount, setAmount] = useState(100)
   const [busy, setBusy] = useState(false)
@@ -55,8 +55,8 @@ export default function DepositScreen() {
           }
         } else {
           Alert.alert(
-            "Stripe test escrow",
-            "PaymentIntent unavailable (edge function / secret). Minting local test escrow so you can keep testing.",
+            "Card deposit unavailable",
+            "Couldn’t reach the payment service. Adding gold to escrow locally instead.",
           )
         }
       }
@@ -77,7 +77,7 @@ export default function DepositScreen() {
       <View style={{ alignItems: "center", marginTop: 12 }}>
         <ObolMark size={96} fill={0.7} moment="arrival" useRaster />
         <Label style={{ marginTop: 14, color: v.amb, letterSpacing: 2 }}>
-          {stripeOn ? "STRIPE TEST ESCROW" : "ESCROW MINT"}
+          {stripeOn ? "STRIPE ESCROW" : "ESCROW"}
         </Label>
         <UiText weight="semi" style={{ marginTop: 8, textAlign: "center", fontSize: 14, color: v.dim }}>
           Funds sit in platform escrow until gifted or cashed out. Gold is reference weight — not physical metal.
@@ -124,7 +124,7 @@ export default function DepositScreen() {
 
       <View style={{ flex: 1 }} />
       <PrimaryButton
-        title={stripeOn ? "PAY WITH STRIPE (TEST)" : isMock ? "MINT INTO ESCROW" : "CONTINUE"}
+        title={stripeOn ? "PAY WITH STRIPE" : "ADD TO ESCROW"}
         onPress={confirm}
         disabled={busy || amount <= 0}
       />

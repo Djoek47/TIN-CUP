@@ -4,11 +4,7 @@ import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo
 import { Label, UiText } from "@/components/vessel/MonoNum"
 import { useVessel } from "@/providers/VesselTheme"
 
-/**
- * Apple camera surface via expo-camera (AVFoundation on iOS).
- * Publish = host preview. Subscribe = viewer; remote A/V needs a stream session —
- * we show host identity / waiting state, never a fake “demo frame”.
- */
+/** Phone camera surface for go-live (publish) and viewer wait (subscribe). */
 export function LiveRoom({
   mode,
   identity = "guest",
@@ -55,7 +51,7 @@ export function LiveRoom({
           @{identity}
         </UiText>
         <Label style={{ color: v.dim, marginTop: 14, textAlign: "center", paddingHorizontal: 24 }}>
-          Viewer joins the host’s Apple camera session when they go live. No placeholder stream.
+          The stream starts when they go live.
         </Label>
       </View>
     )
@@ -64,9 +60,9 @@ export function LiveRoom({
   if (!native) {
     return (
       <View style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: "#050505" }]}>
-        <Label style={{ color: v.amb }}>CAMERA REQUIRES iOS / ANDROID BUILD</Label>
+        <Label style={{ color: v.amb }}>CAMERA ON PHONE</Label>
         <Label style={{ color: v.dim, marginTop: 10, textAlign: "center", paddingHorizontal: 28 }}>
-          TestFlight / device binary uses Apple camera. Web preview cannot open AVFoundation.
+          Go live from the 0bol app on your iPhone or iPad.
         </Label>
       </View>
     )

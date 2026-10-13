@@ -23,7 +23,7 @@ const METHODS: { id: string; label: string; to: "verify" | "fate" }[] = [
   { id: "wallet", label: "Wallet", to: "fate" },
 ]
 
-/** CONNECT — demo dual accounts + auth methods → verify or fate */
+/** CONNECT — dual accounts + auth methods → verify or fate */
 export default function SignIn() {
   const router = useRouter()
   const { v } = useVessel()
@@ -35,10 +35,9 @@ export default function SignIn() {
     setBusy(role)
     try {
       await connectDemo(role)
-      // Demo accounts already have caste set — skip fate picker, enter app
       router.replace("/(app)" as Href)
     } catch {
-      say("Demo connect failed")
+      say("Connect failed")
     } finally {
       setBusy(null)
     }
@@ -69,10 +68,10 @@ export default function SignIn() {
           Connect
         </UiText>
         <UiText weight="reg" style={{ fontSize: 13, color: v.dim, lineHeight: 20, marginBottom: 18 }}>
-          Start with mock gold — two seeded accounts (peasant + lord). Real rails later.
+          Pick a role to enter, or continue with email.
         </UiText>
 
-        <Label style={{ color: v.amb, marginBottom: 10 }}>MOCK QA · FAKE MONEY</Label>
+        <Label style={{ color: v.amb, marginBottom: 10 }}>QUICK START</Label>
         <PrimaryButton
           title="ENTER AS VAGRANT (PEASANT)"
           tone="lim"
@@ -87,14 +86,10 @@ export default function SignIn() {
           onPress={() => onDemo("lord")}
         />
         <Label style={{ marginTop: 10, color: v.faint, lineHeight: 18 }}>
-          @{DEMO_ACCOUNTS.vagrant.user.handle} · $
-          {DEMO_ACCOUNTS.vagrant.seedFiat.available + DEMO_ACCOUNTS.vagrant.seedFiat.hold} mock · go live /
-          challenges / cash out
+          @{DEMO_ACCOUNTS.vagrant.user.handle} · go live / challenges / cash out
         </Label>
         <Label style={{ marginTop: 4, color: v.faint, lineHeight: 18 }}>
-          @{DEMO_ACCOUNTS.lord.user.handle} · $
-          {DEMO_ACCOUNTS.lord.seedFiat.available + DEMO_ACCOUNTS.lord.seedFiat.hold} mock · fund bounties /
-          pour gifts
+          @{DEMO_ACCOUNTS.lord.user.handle} · fund bounties / pour gifts
         </Label>
 
         <Label style={{ marginTop: space.sectionGap, marginBottom: 8 }}>OTHER METHODS</Label>
@@ -132,9 +127,6 @@ export default function SignIn() {
             disabled={!!busy}
             onPress={() => onMethod(METHODS[0])}
           />
-          <Label style={{ textAlign: "center", marginTop: 18, color: v.faint }}>
-            MOCK FIRST · STRIPE / THIRDWEB WHEN KEYS SET
-          </Label>
         </View>
       </ScrollView>
     </VesselScreen>

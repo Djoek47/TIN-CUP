@@ -1,5 +1,5 @@
 /**
- * Fixed mock test identities for dual-caste QA.
+ * Fixed dual-caste identities for QA.
  * Addresses are stable so Supabase seed + app reconnect share the same rows.
  */
 import { fiatToGoldMg, FiatCurrency } from "@/lib/gold"
@@ -38,13 +38,13 @@ function bal(available: number, hold: number, currency: FiatCurrency = "USD"): B
 /** Peasant / Vagrant — earn, go live, cash out, ascend */
 export const DEMO_VAGRANT: DemoAccount = {
   role: "vagrant",
-  label: "Test Vagrant (peasant)",
+  label: "Vagrant (peasant)",
   address: "0x1111111111111111111111111111111111111111",
   caste: "vagrant",
   user: {
     handle: "dusty",
     displayName: "Dusty",
-    bio: "Mock peasant account — go live, enter challenges, cash out escrow.",
+    bio: "Go live, enter challenges, cash out escrow.",
     location: "Toronto, CA",
     link: "obol.app/dusty",
     adult: false,
@@ -56,13 +56,13 @@ export const DEMO_VAGRANT: DemoAccount = {
 /** Lord — fund bounties, pour gifts, court */
 export const DEMO_LORD: DemoAccount = {
   role: "lord",
-  label: "Test Lord",
+  label: "Lord",
   address: "0x2222222222222222222222222222222222222222",
   caste: "lord",
   user: {
     handle: "baron",
     displayName: "Baron",
-    bio: "Mock lord account — fund bounties, pour gold, watch the court.",
+    bio: "Fund bounties, pour gold, watch the court.",
     location: "New York, US",
     link: "obol.app/baron",
     adult: false,
@@ -89,7 +89,7 @@ export function demoLedger(role: DemoRole): LedgerEntry[] {
     {
       id: `${role}-seed`,
       dir: "in",
-      who: "Mock escrow provision",
+      who: "Opening balance",
       gold_mg: fiatToGoldMg(avail, cur),
       fiat_cents: Math.round(avail * 100),
       currency: cur,

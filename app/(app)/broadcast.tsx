@@ -70,7 +70,7 @@ export default function BroadcastScreen() {
 
         <View style={[styles.meta, { paddingHorizontal: space.screenPad }]}>
           <MonoNum style={{ color: v.lim, fontSize: 16 }}>GOAL {fmtUsd(goal, { cents: false })}</MonoNum>
-          <Label>Apple camera · @{user.handle}</Label>
+          <Label>@{user.handle}</Label>
         </View>
 
         <Row style={[styles.tools, { paddingHorizontal: space.screenPad }]}>

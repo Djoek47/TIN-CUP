@@ -53,7 +53,7 @@ export function railLabel(): string {
   const m = moneyMode()
   if (m === "stripe") return "Stripe escrow"
   if (m === "thirdweb") return "thirdweb treasury"
-  return "Mock escrow"
+  return "Escrow"
 }
 
 export { MONEY_FAIL }

@@ -108,7 +108,7 @@ export default function BegDetailsScreen() {
       <View style={{ height: 10 }} />
       <PrimaryButton title="WATCH LIVE" tone="lim" onPress={() => router.push("/(app)/live")} />
       <Label style={{ textAlign: "center", marginTop: 10, marginBottom: 8 }}>
-        Mock escrow · no real card charge
+        Poured from your available gold
       </Label>
     </VesselScreen>
   )

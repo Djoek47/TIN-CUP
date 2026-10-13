@@ -54,7 +54,7 @@ export default function ArenaScreen() {
     try {
       if (isLord) {
         await fundBounty(A.title, A.fundUsd)
-        Alert.alert("Bounty funded", `${A.title} · $${A.fundUsd} held in mock escrow.`)
+        Alert.alert("Bounty funded", `${A.title} · $${A.fundUsd} held in escrow.`)
         router.push("/(app)/wallet")
       } else {
         await enterChallenge(A.title, A.entryUsd)
@@ -157,7 +157,7 @@ export default function ArenaScreen() {
           ))
         ) : (
           <UiText weight="reg" style={{ color: v.dim, marginTop: 12, lineHeight: 18 }}>
-            Nobody is on Apple camera. Go live from Home to appear here.
+            Nobody is live. Go live from Home to appear here.
           </UiText>
         )}
       </ScrollView>

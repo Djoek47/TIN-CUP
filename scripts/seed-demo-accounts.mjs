@@ -44,7 +44,7 @@ const ACCOUNTS = [
 const supabase = createClient(url, key)
 
 async function main() {
-  console.log("Provisioning dual-caste mock accounts…")
+  console.log("Provisioning dual-caste accounts…")
   for (const a of ACCOUNTS) {
     const gold_mg_available = fiatToGoldMg(a.available)
     const gold_mg_hold = fiatToGoldMg(a.hold)
@@ -80,7 +80,7 @@ async function main() {
       user_id: a.id.toLowerCase(),
       kind: "deposit",
       amount_cents: balance_cents,
-      description: "Mock escrow provision",
+      description: "Opening balance",
       gold_mg: gold_mg_total,
       fiat_cents: balance_cents,
       currency: "USD",
@@ -94,11 +94,11 @@ async function main() {
       user_id: a.id.toLowerCase(),
       kind: "system",
       title: `${a.display_name} ready`,
-      body: `Mock ${a.role} provisioned with $${a.available + a.hold}`,
+      body: `${a.role} ready with $${a.available + a.hold}`,
     })
     if (nErr) throw nErr
 
-    console.log(`✓ ${a.role} @${a.handle} ${a.id.slice(0, 10)}… · $${a.available + a.hold} mock`)
+    console.log(`✓ ${a.role} @${a.handle} ${a.id.slice(0, 10)}… · $${a.available + a.hold}`)
   }
 
   // Clear old seed begs — feeds should only show real composed begs

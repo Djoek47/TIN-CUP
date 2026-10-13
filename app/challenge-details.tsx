@@ -43,7 +43,7 @@ export default function ChallengeDetailsScreen() {
       if (isLord) {
         await fundBounty(challenge.title, bountyUsd)
         setDone(true)
-        Alert.alert("Bounty funded", `$${bountyUsd} held in mock escrow.`)
+        Alert.alert("Bounty funded", `$${bountyUsd} held in escrow.`)
       } else {
         await enterChallenge(challenge.title, entryUsd)
         setDone(true)
@@ -65,7 +65,7 @@ export default function ChallengeDetailsScreen() {
       <MonoNum style={{ color: v.amb, fontSize: 36, marginTop: 14 }}>
         ${bountyUsd.toLocaleString()}
       </MonoNum>
-      <Label style={{ marginTop: 4 }}>TO THE WINNER (MOCK GOLD)</Label>
+      <Label style={{ marginTop: 4 }}>TO THE WINNER</Label>
       <UiText weight="black" style={{ fontSize: 22, marginTop: 18 }}>
         {challenge.task}
       </UiText>

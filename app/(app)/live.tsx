@@ -80,7 +80,7 @@ export default function LiveScreen() {
         <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: space.screenPad }}>
           <Label style={{ color: v.dim, textAlign: "center" }}>NO ONE IS LIVE</Label>
           <UiText weight="reg" style={{ color: v.dim, textAlign: "center", marginTop: 12, lineHeight: 20 }}>
-            When a vagrant starts Apple camera broadcast, they appear here.
+            When someone goes live, they appear here.
           </UiText>
           {!isLord ? (
             <View style={{ marginTop: 24 }}>

@@ -82,7 +82,7 @@ export default function CashOutScreen() {
             ? "STRIPE CONNECT"
             : moneyMode === "thirdweb"
               ? "THIRDWEB USDT"
-              : "MOCK QUEUE"}
+              : "ESCROW QUEUE"}
         </Label>
       </Row>
       <Hairline />

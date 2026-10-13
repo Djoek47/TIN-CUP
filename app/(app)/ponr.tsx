@@ -73,7 +73,7 @@ export default function Ponr() {
           </UiText>
           <Pressable
             onPress={() => {
-              say("Mock escrow · add funds if needed")
+              say("Add funds if needed")
               router.push("/(app)/deposit")
             }}
           >

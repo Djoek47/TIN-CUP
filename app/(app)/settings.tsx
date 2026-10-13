@@ -1,4 +1,4 @@
-import { ScrollView, View, Pressable, Switch, StyleSheet, Alert, Linking } from "react-native"
+import { ScrollView, View, Pressable, Switch, StyleSheet, Alert } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -34,7 +34,7 @@ export default function SettingsScreen() {
   const switchDemo = (role: DemoRole) => {
     Alert.alert(
       `Switch to ${DEMO_ACCOUNTS[role].label}?`,
-      "Loads seeded mock gold for that identity. Local session replaced.",
+      "Loads that account’s gold balance. Current session is replaced.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -201,18 +201,18 @@ export default function SettingsScreen() {
             Stripe publishable
           </UiText>
           <Label style={{ color: stripeConfigured() ? v.lim : v.dim }}>
-            {stripeConfigured() ? "pk_ READY" : "MISSING pk_test"}
+            {stripeConfigured() ? "READY" : "NOT SET"}
           </Label>
         </Row>
         <Hairline />
         <Pressable onPress={() => router.push("/(app)/deposit")} style={styles.row}>
           <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
-            Test deposit
+            Add gold
           </UiText>
           <Label style={{ color: v.amb }}>→</Label>
         </Pressable>
 
-        <Label style={{ marginTop: space.sectionGap }}>MOCK QA ACCOUNTS</Label>
+        <Label style={{ marginTop: space.sectionGap }}>SWITCH ACCOUNT</Label>
         <Hairline />
         <Pressable
           onPress={() => switchDemo("vagrant")}
@@ -221,9 +221,9 @@ export default function SettingsScreen() {
         >
           <View style={{ flex: 1 }}>
             <UiText weight="semi" style={{ fontSize: 14 }}>
-              Load Test Vagrant
+              Enter as Vagrant
             </UiText>
-            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.vagrant.user.handle} · peasant UI</Label>
+            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.vagrant.user.handle} · peasant</Label>
           </View>
           <Label style={{ color: demoRole === "vagrant" ? v.lim : v.amb }}>
             {demoRole === "vagrant" ? "ACTIVE" : "SWITCH"}
@@ -233,9 +233,9 @@ export default function SettingsScreen() {
         <Pressable onPress={() => switchDemo("lord")} style={styles.row} disabled={demoRole === "lord"}>
           <View style={{ flex: 1 }}>
             <UiText weight="semi" style={{ fontSize: 14 }}>
-              Load Test Lord
+              Enter as Lord
             </UiText>
-            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.lord.user.handle} · lord UI</Label>
+            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.lord.user.handle} · lord</Label>
           </View>
           <Label style={{ color: demoRole === "lord" ? v.amb : v.lim }}>
             {demoRole === "lord" ? "ACTIVE" : "SWITCH"}
@@ -248,7 +248,7 @@ export default function SettingsScreen() {
           onPress={() =>
             Alert.alert(
               "0bol help",
-              "Vagrant: go live, enter challenges, cash out, ascend.\nLord: fund bounties, pour gifts.\nMock gold first — Stripe when keys are set.\nSwitch accounts under Mock QA.",
+              "Vagrant: go live, enter challenges, cash out, ascend.\nLord: fund bounties, pour gifts.\nSwitch accounts under Switch Account.",
             )
           }
           style={styles.row}
@@ -262,14 +262,8 @@ export default function SettingsScreen() {
           onPress={() =>
             Alert.alert(
               "Terms & privacy",
-              "TestFlight MVP — mock escrow only. Reference gold is not physical metal. Contact the project owner for production terms.",
-              [
-                { text: "OK" },
-                {
-                  text: "Open README",
-                  onPress: () => Linking.openURL("https://github.com/Djoek47/TIN-CUP").catch(() => say("Link failed")),
-                },
-              ],
+              "Reference gold is not physical metal. Contact the project owner for production terms.",
+              [{ text: "OK" }],
             )
           }
           style={styles.row}

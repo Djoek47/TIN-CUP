@@ -22,7 +22,8 @@
     "smoke:workflow": "node scripts/workflow-smoke.mjs",
     "stripe:check": "node --env-file=.env scripts/stripe-connect-check.mjs",
     "qa:mock": "npm run typecheck && npm run matrix && npm run smoke:workflow",
-    "qa:release": "npm run typecheck && npm run matrix && npm run smoke:workflow && node scripts/release-matrix.mjs && npm run stripe:check",
+    "qa:buttons": "node scripts/button-audit.mjs",
+    "qa:release": "npm run typecheck && npm run matrix && npm run smoke:workflow && node scripts/release-matrix.mjs && npm run qa:buttons && npm run stripe:check",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

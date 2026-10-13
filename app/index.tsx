@@ -88,7 +88,7 @@ export default function Splash() {
             <View style={{ height: space.btnH }} />
           )}
           <Label style={{ textAlign: "center", marginTop: 14, color: v.faint }}>
-            Mock gold first · Entertainment · Culture
+            Entertainment · Culture · Gold
           </Label>
         </View>
       </View>

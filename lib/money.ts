@@ -53,13 +53,15 @@ export function fmtBalanceGold(
 }
 
 export const MONEY_FAIL = "No gold moved."
-export const TEST_BADGE = "TEST WALLET · FAKE MONEY"
-export const STRIPE_BADGE = "STRIPE · TEST ESCROW"
+export const ESCROW_BADGE = "ESCROW · GOLD"
+export const STRIPE_BADGE = "STRIPE · ESCROW"
 export const THIRDWEB_BADGE = "THIRDWEB · TREASURY"
 export const TESTNET_BADGE = THIRDWEB_BADGE
+/** @deprecated use ESCROW_BADGE */
+export const TEST_BADGE = ESCROW_BADGE
 
 export function moneyBadgeFor(mode: MoneyMode): string {
   if (mode === "stripe") return STRIPE_BADGE
   if (mode === "thirdweb") return THIRDWEB_BADGE
-  return TEST_BADGE
+  return ESCROW_BADGE
 }

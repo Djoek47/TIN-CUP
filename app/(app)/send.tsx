@@ -131,7 +131,9 @@ export default function SendScreen() {
 
       <View style={{ flex: 1 }} />
       <PrimaryButton title={`POUR $${amount} → ${R.handle}`} onPress={pour} disabled={busy} />
-      <Label style={{ textAlign: "center", marginTop: 12 }}>MOCK GOLD · CROSS-ACCOUNT NOTIFIES @{DEMO_ACCOUNTS.vagrant.user.handle}</Label>
+      <Label style={{ textAlign: "center", marginTop: 12 }}>
+        100% TO THE RECIPIENT · NO CUT
+      </Label>
     </VesselScreen>
   )
 }

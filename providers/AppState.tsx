@@ -260,9 +260,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         address: demo.address,
         kind: "system",
         title: `Signed in as ${demo.label}`,
-        body: "Mock gold provisioned for dual-caste QA",
+        body: "Gold balance ready",
       })
-      say(`Loaded ${demo.label}`)
+      say(`Entered as ${demo.label}`)
     },
     [say, theme],
   )
@@ -612,7 +612,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const entry = makeEntry({
         id: `d-${Date.now()}`,
         dir: "in",
-        who: mode === "stripe" ? "Deposit · Stripe escrow" : mode === "thirdweb" ? "Deposit · treasury" : "Deposit · mock escrow",
+        who: mode === "stripe" ? "Deposit · Stripe escrow" : mode === "thirdweb" ? "Deposit · treasury" : "Deposit · escrow",
         gold_mg: mg,
         fiatAmount: amountFiat,
         kind: "deposit",

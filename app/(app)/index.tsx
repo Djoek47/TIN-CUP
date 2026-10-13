@@ -129,7 +129,7 @@ export default function HomeScreen() {
           <View style={{ marginTop: 22 }}>
             <Label>LIVE NOW</Label>
             <UiText weight="reg" style={{ color: v.dim, marginTop: 8, fontSize: 13, lineHeight: 18 }}>
-              Nobody is on camera. {isLord ? "Pour gold when a vagrant goes live." : "Hold the orb to go live with Apple camera."}
+              Nobody is live right now. {isLord ? "Pour gold when someone goes live." : "Hold the orb to go live."}
             </UiText>
             {!isLord ? (
               <View style={{ marginTop: 14 }}>
