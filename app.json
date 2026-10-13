@@ -65,7 +65,6 @@
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.com.obol.app",
           "enableGooglePay": false
         }
       ]

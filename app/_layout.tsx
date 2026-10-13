@@ -56,11 +56,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.bg.canvas }}>
       <SafeAreaProvider>
-        <StripeProvider
-          publishableKey={publishableKey}
-          merchantIdentifier="merchant.com.obol.app"
-          urlScheme="obol"
-        >
+        <StripeProvider publishableKey={publishableKey} urlScheme="obol">
           <WalletProvider>
             <AuthProvider>
               <AppStateProvider>
