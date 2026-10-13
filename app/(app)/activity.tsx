@@ -78,13 +78,14 @@ export default function ActivityScreen() {
 }
 
 function Section({ title, items }: { title: string; items: LedgerEntry[] }) {
+  const router = useRouter()
   const { v } = useVessel()
   if (!items.length) return null
   return (
     <View style={{ marginTop: space.sectionGap }}>
       <Label style={{ marginBottom: 4 }}>{title}</Label>
       {items.map((e) => (
-        <View key={e.id}>
+        <Pressable key={e.id} onPress={() => router.push("/(app)/wallet")}>
           <Hairline />
           <Row style={styles.row}>
             <View style={{ flex: 1 }}>
@@ -92,7 +93,19 @@ function Section({ title, items }: { title: string; items: LedgerEntry[] }) {
                 {e.who}
               </UiText>
               <Label style={{ marginTop: 3 }}>
-                {e.dir === "in" ? "Sent you a gift" : e.kind === "challenge" ? "Challenge" : "You sent a gift"}
+                {e.kind === "deposit"
+                  ? "Escrow deposit"
+                  : e.kind === "cash"
+                    ? "Cash out"
+                    : e.kind === "challenge" || e.kind === "bounty"
+                      ? e.kind === "bounty"
+                        ? "Bounty funded"
+                        : "Challenge"
+                      : e.kind === "ascend"
+                        ? "Ascension"
+                        : e.dir === "in"
+                          ? "Gold in"
+                          : "Gold out"}
               </Label>
             </View>
             <View style={{ alignItems: "flex-end" }}>
@@ -103,7 +116,7 @@ function Section({ title, items }: { title: string; items: LedgerEntry[] }) {
               <Label style={{ marginTop: 4 }}>{ago(e.ts)}</Label>
             </View>
           </Row>
-        </View>
+        </Pressable>
       ))}
     </View>
   )

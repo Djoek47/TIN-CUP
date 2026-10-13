@@ -11,6 +11,7 @@ import {
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
 import { DEMO_ACCOUNTS, type DemoRole } from "@/lib/demo-accounts"
+import { stripeConfigured } from "@/lib/stripe"
 import { space } from "@/theme/vessel"
 
 export default function SettingsScreen() {
@@ -182,6 +183,31 @@ export default function SettingsScreen() {
         <Pressable onPress={() => router.push("/(app)/activity" as any)} style={styles.row}>
           <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
             Activity ledger
+          </UiText>
+          <Label style={{ color: v.amb }}>→</Label>
+        </Pressable>
+
+        <Label style={{ marginTop: space.sectionGap }}>MONEY RAIL</Label>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Mode
+          </UiText>
+          <Label style={{ color: v.amb }}>{moneyBadge}</Label>
+        </Row>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Stripe publishable
+          </UiText>
+          <Label style={{ color: stripeConfigured() ? v.lim : v.dim }}>
+            {stripeConfigured() ? "pk_ READY" : "MISSING pk_test"}
+          </Label>
+        </Row>
+        <Hairline />
+        <Pressable onPress={() => router.push("/(app)/deposit")} style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Test deposit
           </UiText>
           <Label style={{ color: v.amb }}>→</Label>
         </Pressable>

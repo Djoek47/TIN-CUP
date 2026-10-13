@@ -1,0 +1,32 @@
+---
+description: Daily Slack/make collaboration branches and TestFlight gate
+alwaysApply: true
+---
+
+# 0bol / Tin Cup collaboration rules
+
+## Branch naming (source of truth)
+
+- Daily integration branch: `Slack/make-vN` (examples: `Slack/make-v1`, `Slack/make-v2`).
+- Put **all finished work for that day** on the current `Slack/make-vN` branch.
+- When starting a new day / major aggregation pass, create the next version (`Slack/make-v2`, then `v3`, …) from the previous make branch (or the agreed tip), never from a half-finished side experiment unless the user says so.
+- Keep cloud-agent helper branches (`cursor/…`) only as temporary worktrees if required by tooling; **merge/push the product state onto `Slack/make-vN`**.
+- Do not treat `main` as the daily working branch unless the user explicitly asks to merge.
+
+## TestFlight / App Store
+
+- **Never** run `eas submit`, Ascension/TestFlight upload, or production App Store submit unless the user explicitly approves in the current conversation.
+- Building locally or on EAS is allowed when asked; **submit is gated**.
+- When ready, say what is prepared and **ask** before submitting.
+
+## Money rails order
+
+1. Mock gold / dual demo accounts first (`@dusty` vagrant, `@baron` lord).
+2. Stripe **test** (`pk_test` / `sk_test` + PaymentSheet) when keys are in secrets.
+3. Live Stripe / real money only when the user explicitly switches livemode and provides live keys.
+
+## Dual caste
+
+- Ship and verify both **Vagrant (peasant)** and **Lord** experiences.
+- Ascension is one-way in product rules; demo account switch in Settings is allowed for QA only.
+---

@@ -45,7 +45,7 @@ export default function Welcome() {
         <View style={styles.top}>
           <ObolMark size={72} fill={0.72} moment="idle" />
           <UiText weight="black" style={[styles.wordmark, { color: v.ink }]}>
-            OBOL
+            0bol
           </UiText>
           <Label style={{ color: pure.amber, letterSpacing: 3, marginTop: 8 }}>
             A COIN FOR THE CROSSING

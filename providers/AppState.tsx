@@ -311,10 +311,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setUser((prev) => {
         const next = { ...prev, ...p }
         persist({ user: next })
+        if (next.address) {
+          void upsertProfile({ address: next.address, user: next, caste, balance })
+        }
         return next
       })
     },
-    [persist],
+    [balance, caste, persist],
   )
 
   const chooseVagrant = useCallback(async () => {
@@ -324,8 +327,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
     setCaste("vagrant")
     await persist({ caste: "vagrant" })
+    if (user.address) {
+      await upsertProfile({ address: user.address, user, caste: "vagrant", balance })
+    }
     say("Welcome, Vagrant")
-  }, [caste, persist, say])
+  }, [balance, caste, persist, say, user])
 
   const makeEntry = useCallback(
     (

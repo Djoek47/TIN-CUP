@@ -20,6 +20,7 @@
     "seed:demo": "node --env-file=.env scripts/seed-demo-accounts.mjs",
     "matrix": "node scripts/matrix-check.mjs",
     "smoke:workflow": "node scripts/workflow-smoke.mjs",
+    "stripe:check": "node --env-file=.env scripts/stripe-connect-check.mjs",
     "qa:mock": "npm run typecheck && npm run matrix && npm run smoke:workflow",
     "typecheck": "tsc --noEmit"
   },

@@ -31,11 +31,17 @@ function get(url, headers) {
 }
 
 async function main() {
-  const stripePk = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
-  const stripeOk = stripePk.startsWith("pk_") && !stripePk.includes("your_")
+  const stripePk =
+    process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    ""
+  const stripeOk =
+    (stripePk.startsWith("pk_test_") || stripePk.startsWith("pk_live_")) &&
+    !stripePk.includes("your_")
   const out = {
-    // Default mock for dual-caste QA; set EXPO_PUBLIC_MONEY_MODE=auto when Stripe keys land
-    EXPO_PUBLIC_MONEY_MODE: process.env.EXPO_PUBLIC_MONEY_MODE || "mock",
+    // Prefer auto when Stripe pk is present so deposit uses PaymentSheet; else mock for QA
+    EXPO_PUBLIC_MONEY_MODE:
+      process.env.EXPO_PUBLIC_MONEY_MODE || (stripeOk ? "auto" : "mock"),
     EXPO_PUBLIC_THIRDWEB_CLIENT_ID: process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID || "",
     EXPO_PUBLIC_THIRDWEB_CHAIN: process.env.EXPO_PUBLIC_THIRDWEB_CHAIN || "base-sepolia",
     EXPO_PUBLIC_XAU_USD: process.env.EXPO_PUBLIC_XAU_USD || "2650",
