@@ -35,7 +35,7 @@ export function GulchTabBar({ state, navigation }: GulchTabBarProps) {
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
       <View style={styles.pill}>
-        <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.pillInner}>
           {routes.slice(0, 2).map((route) => {
             const focused = state.index === state.routes.findIndex((r) => r.key === route.key)

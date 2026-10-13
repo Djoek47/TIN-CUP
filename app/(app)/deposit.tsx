@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { View, StyleSheet, Pressable } from "react-native"
+import { View, StyleSheet, Pressable, Alert } from "react-native"
 import { useRouter } from "expo-router"
+import { useStripe } from "@stripe/stripe-react-native"
 import {
   VesselScreen,
   ScreenHeader,
@@ -16,24 +17,53 @@ import {
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
 import { fiatToGoldMg, fmtFiat, fmtGoldMg, FiatCurrency } from "@/lib/gold"
+import { stripeDeposit, ensureStripeReady } from "@/lib/rails"
+import { stripeConfigured } from "@/lib/stripe"
 import { space } from "@/theme/vessel"
 
-/** Deposit → platform escrow → mint gold_mg on ledger */
+/** Deposit → Stripe test PaymentSheet (when configured) → escrow mint gold_mg */
 export default function DepositScreen() {
   const router = useRouter()
   const { v } = useVessel()
   const { deposit, prefs, setPrefs, moneyMode, isMock } = useApp()
+  const { initPaymentSheet, presentPaymentSheet } = useStripe()
   const [amount, setAmount] = useState(100)
   const [busy, setBusy] = useState(false)
   const currency = prefs.currency
   const mg = fiatToGoldMg(amount, currency)
+  const stripeOn = stripeConfigured()
 
   const confirm = async () => {
     if (busy || amount <= 0) return
     setBusy(true)
     try {
+      if (stripeOn || moneyMode === "stripe") {
+        await ensureStripeReady()
+        const intent = await stripeDeposit(amount, currency)
+        if (intent.ok && intent.clientSecret) {
+          const { error: initErr } = await initPaymentSheet({
+            paymentIntentClientSecret: intent.clientSecret,
+            merchantDisplayName: "0bol",
+          })
+          if (initErr) throw new Error(initErr.message)
+          const { error: presentErr } = await presentPaymentSheet()
+          if (presentErr) {
+            if (presentErr.code !== "Canceled") {
+              Alert.alert("Payment failed", presentErr.message)
+            }
+            return
+          }
+        } else {
+          Alert.alert(
+            "Stripe test escrow",
+            "PaymentIntent unavailable (edge function / secret). Minting local test escrow so you can keep testing.",
+          )
+        }
+      }
       await deposit(amount, currency)
       router.replace("/(app)/wallet")
+    } catch (e: any) {
+      Alert.alert("Deposit failed", e?.message || "Try again")
     } finally {
       setBusy(false)
     }
@@ -46,9 +76,11 @@ export default function DepositScreen() {
       <ScreenHeader title="Add Gold" onBack={() => router.back()} />
       <View style={{ alignItems: "center", marginTop: 12 }}>
         <ObolMark size={96} fill={0.7} moment="arrival" />
-        <Label style={{ marginTop: 14, color: v.amb, letterSpacing: 2 }}>ESCROW MINT</Label>
+        <Label style={{ marginTop: 14, color: v.amb, letterSpacing: 2 }}>
+          {stripeOn ? "STRIPE TEST ESCROW" : "ESCROW MINT"}
+        </Label>
         <UiText weight="semi" style={{ marginTop: 8, textAlign: "center", fontSize: 14, color: v.dim }}>
-          Funds sit in platform escrow until gifted or cashed out. Gold is a reference weight — not physical metal.
+          Funds sit in platform escrow until gifted or cashed out. Gold is reference weight — not physical metal.
         </UiText>
       </View>
 
@@ -73,9 +105,7 @@ export default function DepositScreen() {
 
       <Label style={{ marginTop: 18 }}>YOU SEND</Label>
       <MonoNum style={{ fontSize: 36, marginTop: 6 }}>{fmtFiat(amount, currency)}</MonoNum>
-      <Label style={{ marginTop: 6, color: v.lim }}>
-        ≈ {fmtGoldMg(mg, prefs.massUnit)} reference gold
-      </Label>
+      <Label style={{ marginTop: 6, color: v.lim }}>≈ {fmtGoldMg(mg, prefs.massUnit)} reference gold</Label>
 
       <CashSlider value={amount} onChange={setAmount} max={1000} />
 
@@ -86,20 +116,20 @@ export default function DepositScreen() {
       </Row>
       <Hairline />
       <Row style={styles.meta}>
-        <Label>ESCROW</Label>
-        <Label style={{ color: v.lim }}>
-          {isMock ? "MOCK HOLD" : moneyMode === "stripe" ? "STRIPE BALANCE" : "TREASURY WALLET"}
+        <Label>STRIPE</Label>
+        <Label style={{ color: stripeOn ? v.lim : v.dim }}>
+          {stripeOn ? "TEST MODE READY" : "ADD pk_test_ SECRET"}
         </Label>
       </Row>
 
       <View style={{ flex: 1 }} />
       <PrimaryButton
-        title={isMock ? "MINT INTO ESCROW" : "CONTINUE TO BANK"}
+        title={stripeOn ? "PAY WITH STRIPE (TEST)" : isMock ? "MINT INTO ESCROW" : "CONTINUE"}
         onPress={confirm}
         disabled={busy || amount <= 0}
       />
       <Label style={{ textAlign: "center", marginTop: 12 }}>
-        Card prices settle off-app when Stripe keys are set
+        {stripeOn ? "Use card 4242 4242 4242 4242 in test mode" : "Local escrow until Stripe pk_test is set"}
       </Label>
     </VesselScreen>
   )

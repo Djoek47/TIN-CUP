@@ -6,7 +6,7 @@ import {
   ScreenHeader,
   HoldButton,
   PrimaryButton,
-  ImageSlot,
+  LiveRoom,
   Label,
   UiText,
   MonoNum,
@@ -48,7 +48,9 @@ export default function GoLiveScreen() {
   return (
     <VesselScreen nav={false}>
       <ScreenHeader title="Go Live" onBack={() => router.back()} />
-      <ImageSlot label="PREVIEW · NOT LIVE" height={220} />
+      <View style={{ height: 220, borderRadius: v.rad, overflow: "hidden" }}>
+        <LiveRoom mode="publish" room="obol-preview" identity="preview" />
+      </View>
       <UiText weight="black" style={{ fontSize: 28, marginTop: 22, lineHeight: 34 }}>
         What's your{"\n"}moment?
       </UiText>

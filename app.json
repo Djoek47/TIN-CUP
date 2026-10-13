@@ -61,7 +61,14 @@
         }
       ],
       "expo-splash-screen",
-      "expo-updates"
+      "expo-updates",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.obol.app",
+          "enableGooglePay": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

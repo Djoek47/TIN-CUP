@@ -39,7 +39,7 @@ export default function HomeScreen() {
         <Row style={styles.top}>
           <Row style={{ gap: 9, flex: 1 }}>
             <UiText weight="black" style={{ fontSize: 15, letterSpacing: isLord ? 7 : 4.5 }}>
-              OBOL
+              0bol
             </UiText>
             <View
               style={[
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth },
   hero: { overflow: "hidden", position: "relative" },
   heroScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "transparent",
     borderBottomWidth: 180,
     borderBottomColor: "rgba(4,4,6,0.92)",

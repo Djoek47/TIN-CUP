@@ -1,14 +1,17 @@
 import React, { useState } from 'react'
 import { Pressable, ActivityIndicator, View } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import type { ComponentProps } from 'react'
 import { pickImage } from '@/lib/camera'
 import { color, space } from '@/theme/tokens'
+
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name']
 
 interface CameraButtonProps {
   onImagePicked?: (imageUri: string) => void
   size?: 'small' | 'medium' | 'large'
   disabled?: boolean
-  icon?: string
+  icon?: IconName
 }
 
 export function CameraButton({

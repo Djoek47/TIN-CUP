@@ -16,6 +16,7 @@
   ],
   "exclude": [
     "docs",
-    "scripts"
+    "scripts",
+    "supabase/functions"
   ]
 }

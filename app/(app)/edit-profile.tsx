@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ScrollView, View, TextInput, StyleSheet, Pressable } from "react-native"
+import { ScrollView, View, TextInput, StyleSheet, Pressable, Image } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -12,6 +12,7 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { pickImage } from "@/lib/camera"
 import { font, space } from "@/theme/vessel"
 
 export default function EditProfileScreen() {
@@ -23,6 +24,15 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(user.bio)
   const [location, setLocation] = useState(user.location)
   const [link, setLink] = useState(user.link)
+  const [photoUri, setPhotoUri] = useState<string | null>((user as any).photoUri || null)
+
+  const changePhoto = async () => {
+    const asset = await pickImage()
+    if (asset?.uri) {
+      setPhotoUri(asset.uri)
+      say("Photo updated")
+    }
+  }
 
   const save = () => {
     updateUser({
@@ -31,6 +41,7 @@ export default function EditProfileScreen() {
       bio: bio.slice(0, 80),
       location: location.trim(),
       link: link.trim(),
+      ...(photoUri ? ({ photoUri } as any) : {}),
     })
     say("Profile saved")
     router.back()
@@ -49,10 +60,16 @@ export default function EditProfileScreen() {
       />
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: "center", marginTop: 8 }}>
-          <View style={{ width: 88 }}>
-            <ImageSlot label={displayName.slice(0, 1).toUpperCase() || "M"} height={88} radius={44} />
-          </View>
-          <Label style={{ marginTop: 10, color: v.amb }}>CHANGE PHOTO</Label>
+          <Pressable onPress={changePhoto} style={{ width: 88 }}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={{ width: 88, height: 88, borderRadius: 44 }} />
+            ) : (
+              <ImageSlot label={displayName.slice(0, 1).toUpperCase() || "M"} height={88} radius={44} />
+            )}
+          </Pressable>
+          <Pressable onPress={changePhoto}>
+            <Label style={{ marginTop: 10, color: v.amb }}>CHANGE PHOTO</Label>
+          </Pressable>
         </View>
 
         <Field label="DISPLAY NAME" value={displayName} onChange={setDisplayName} />

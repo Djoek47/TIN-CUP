@@ -1,8 +1,6 @@
-import { initStripe, useStripe, usePaymentSheet } from "@stripe/stripe-react-native"
-import * as SecureStore from "expo-secure-store"
-import { supabase } from "./supabase"
+import { initStripe } from "@stripe/stripe-react-native"
+import { supabase, isSupabaseConfigured } from "./supabase"
 
-// Initialize Stripe (call this once on app startup)
 export async function initializeStripe(publishableKey: string) {
   await initStripe({
     publishableKey,
@@ -10,48 +8,38 @@ export async function initializeStripe(publishableKey: string) {
   })
 }
 
-/**
- * Create a payment intent for a deposit.
- * Call this from your backend first to get clientSecret + ephemeralKey.
- * Then pass to PaymentSheet.
- */
-export async function createPaymentIntent(amountCents: number) {
-  try {
-    // Call a backend RPC or API endpoint to create payment intent
-    const { data, error } = await supabase.rpc("create_payment_intent", {
-      p_amount_cents: amountCents,
-    })
+export function stripePublishableKey(): string {
+  return process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
+}
 
-    if (error) throw error
-
-    return {
-      clientSecret: data.client_secret,
-      ephemeralKey: data.ephemeral_key,
-      customerId: data.customer_id,
-    }
-  } catch (e) {
-    console.error("[Stripe] Failed to create payment intent:", e)
-    throw e
-  }
+export function stripeConfigured(): boolean {
+  const k = stripePublishableKey()
+  return Boolean(k) && !k.includes("your_") && k.startsWith("pk_")
 }
 
 /**
- * Complete a payment. Call this after PaymentSheet closes successfully.
+ * Create a PaymentIntent via Supabase Edge Function `create-payment-intent`.
+ * Falls back to null when function/secret missing (caller mints mock escrow).
  */
-export async function confirmPayment(amountCents: number, paymentIntentId: string) {
-  try {
-    // After Stripe confirms the payment, deposit the funds
-    const { data, error } = await supabase.rpc("deposit_funds", {
-      p_amount_cents: amountCents,
-      p_ref: paymentIntentId,
-    })
+export async function createPaymentIntent(amountCents: number, currency = "usd") {
+  if (!isSupabaseConfigured) throw new Error("Supabase not configured")
 
-    if (error) throw error
-    return data
-  } catch (e) {
-    console.error("[Stripe] Failed to confirm payment:", e)
-    throw e
+  const { data, error } = await supabase.functions.invoke("create-payment-intent", {
+    body: { amount_cents: amountCents, currency },
+  })
+
+  if (error) throw error
+  if (!data?.client_secret) throw new Error(data?.error || "No client_secret")
+
+  return {
+    clientSecret: data.client_secret as string,
+    paymentIntentId: data.id as string,
   }
+}
+
+/** @deprecated use createPaymentIntent + local deposit mint after success */
+export async function confirmPayment(amountCents: number, paymentIntentId: string) {
+  return { amountCents, paymentIntentId }
 }
 
 export const TEST_CARD = {

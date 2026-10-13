@@ -19,9 +19,11 @@ import {
   JetBrainsMono_500Medium,
   JetBrainsMono_700Bold,
 } from "@expo-google-fonts/jetbrains-mono"
+import { StripeProvider } from "@stripe/stripe-react-native"
 import { AuthProvider } from "@/providers/AuthProvider"
 import { WalletProvider } from "@/providers/WalletProvider"
 import { AppStateProvider } from "@/providers/AppState"
+import { stripePublishableKey } from "@/lib/stripe"
 import { color } from "@/theme/vessel"
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -49,31 +51,39 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null
 
+  const publishableKey = stripePublishableKey()
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.bg.canvas }}>
       <SafeAreaProvider>
-        <WalletProvider>
-          <AuthProvider>
-            <AppStateProvider>
-              <StatusBar style="light" />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: color.bg.canvas },
-                  animation: "slide_from_right",
-                }}
-              >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(onboarding)" />
-                <Stack.Screen name="(app)" />
-                <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
-                <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-                <Stack.Screen name="challenge-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
-              </Stack>
-            </AppStateProvider>
-          </AuthProvider>
-        </WalletProvider>
+        <StripeProvider
+          publishableKey={publishableKey}
+          merchantIdentifier="merchant.com.obol.app"
+          urlScheme="obol"
+        >
+          <WalletProvider>
+            <AuthProvider>
+              <AppStateProvider>
+                <StatusBar style="light" />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: color.bg.canvas },
+                    animation: "slide_from_right",
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(onboarding)" />
+                  <Stack.Screen name="(app)" />
+                  <Stack.Screen name="gift/[id]" options={{ presentation: "transparentModal", animation: "fade" }} />
+                  <Stack.Screen name="beg-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+                  <Stack.Screen name="challenge-details" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+                </Stack>
+              </AppStateProvider>
+            </AuthProvider>
+          </WalletProvider>
+        </StripeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

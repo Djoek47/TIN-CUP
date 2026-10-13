@@ -28,6 +28,7 @@ import {
   ThemeMode,
 } from "@/lib/vessel-types"
 import { VesselThemeProvider } from "@/providers/VesselTheme"
+import { insertLedger, insertNotification, upsertProfile } from "@/lib/sync"
 
 const KEY = "obol_vessel_v1"
 
@@ -199,12 +200,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const connect = useCallback(
     async (_method?: string) => {
       const acc = await connectMockWallet()
-      const nextUser = { ...user, address: acc.address, handle: user.handle || `outlaw_${acc.address.slice(2, 8)}` }
+      const nextUser = {
+        ...user,
+        address: acc.address,
+        handle: user.handle || `outlaw_${acc.address.slice(2, 8)}`,
+      }
       setUser(nextUser)
       await persist({ user: nextUser })
+      await upsertProfile({ address: acc.address, user: nextUser, caste, balance })
       say(_method ? `Connected via ${_method}` : "Wallet ready")
     },
-    [persist, say, user],
+    [balance, caste, persist, say, user],
   )
 
   const disconnect = useCallback(async () => {
@@ -320,8 +326,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setLedger(nextLedger)
     setCaste("lord")
     await persist({ caste: "lord", balance: nextBal, ledger: nextLedger })
+    if (user.address) {
+      await upsertProfile({ address: user.address, user, caste: "lord", balance: nextBal })
+      await insertLedger(entry, user.address)
+      await insertNotification({
+        address: user.address,
+        kind: "system",
+        title: "You are a Lord",
+        body: "Ascension complete",
+      })
+    }
     say("You are now a Lord")
-  }, [balance, caste, ledger, makeEntry, persist, prefs.currency, say])
+  }, [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user])
 
   const gift = useCallback(
     async (to: string, amountFiat: number, _message?: string) => {
@@ -349,9 +365,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setBalance(nextBal)
       setLedger(nextLedger)
       await persist({ balance: nextBal, ledger: nextLedger })
+      if (user.address) {
+        await upsertProfile({ address: user.address, user, caste, balance: nextBal })
+        await insertLedger(entry, user.address)
+      }
       say(`Poured to ${to}`)
     },
-    [balance, ledger, makeEntry, persist, prefs.currency, say],
+    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
   )
 
   const cashOut = useCallback(
@@ -385,23 +405,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setBalance(nextBal)
       setLedger(nextLedger)
       await persist({ balance: nextBal, ledger: nextLedger })
+      if (user.address) {
+        await upsertProfile({ address: user.address, user, caste, balance: nextBal })
+        await insertLedger(entry, user.address)
+        await insertNotification({
+          address: user.address,
+          kind: "cashout",
+          title: "Cash out queued",
+          body: `Releasing ${amountFiat} ${prefs.currency}`,
+        })
+      }
       say(`Cash out queued`)
     },
-    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say],
+    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say, user],
   )
 
   const deposit = useCallback(
     async (amountFiat: number, currency?: FiatCurrency) => {
       const cur = currency ?? prefs.currency
-      // Stripe rail: attempt PaymentIntent when keys present; always mint ledger after
-      if (mode === "stripe") {
-        try {
-          const { stripeDeposit } = await import("@/lib/rails")
-          await stripeDeposit(amountFiat, cur)
-        } catch {
-          /* fall through to local escrow mint */
-        }
-      }
+      // PaymentSheet / PaymentIntent lives in deposit screen; this only mints escrow ledger.
       const mg = fiatToGoldMg(amountFiat, cur)
       // New deposits enter escrow hold, then a portion is available (demo: 70% available / 30% hold)
       const holdMg = mg * 0.3
@@ -427,9 +449,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setBalance(nextBal)
       setLedger(nextLedger)
       await persist({ balance: nextBal, ledger: nextLedger })
+      if (user.address) {
+        await upsertProfile({ address: user.address, user, caste, balance: nextBal })
+        await insertLedger(entry, user.address)
+        await insertNotification({
+          address: user.address,
+          kind: "deposit",
+          title: "Escrow credited",
+          body: `Minted reference gold from ${amountFiat} ${cur}`,
+        })
+      }
       say(`Escrow credited`)
     },
-    [balance, ledger, makeEntry, mode, persist, prefs.currency, say],
+    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say, user],
   )
 
   const addFundsMock = useCallback(

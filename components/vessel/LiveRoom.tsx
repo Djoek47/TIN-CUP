@@ -2,6 +2,7 @@ import { useEffect, useState, type ComponentType } from "react"
 import { Platform, StyleSheet, View } from "react-native"
 import { ImageSlot, Label } from "@/components/vessel"
 import { fetchLiveToken, livekitConfigured } from "@/lib/livekit"
+import { requestCameraPermission } from "@/lib/camera"
 import { useVessel } from "@/providers/VesselTheme"
 
 let CameraView: ComponentType<{ style?: object; facing?: "front" | "back" }> | null = null
@@ -13,8 +14,9 @@ try {
 
 /**
  * Live room surface.
- * - LiveKit: when EXPO_PUBLIC_LIVEKIT_URL + token URL are set (EAS/TestFlight).
- * - Fallback: expo-camera preview (broadcast) or ImageSlot placeholder (viewer).
+ * - LiveKit token badge when URLs configured (full RN SDK needs native build).
+ * - Broadcast: expo-camera preview after permission.
+ * - Viewer: placeholder frame.
  */
 export function LiveRoom({
   mode,
@@ -26,25 +28,32 @@ export function LiveRoom({
   identity?: string
 }) {
   const { v } = useVessel()
-  const [status, setStatus] = useState<"fallback" | "livekit-ready" | "connecting">("fallback")
+  const [status, setStatus] = useState<"fallback" | "camera" | "livekit-ready" | "connecting">("fallback")
+  const [camGranted, setCamGranted] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
+      if (mode === "publish") {
+        const ok = await requestCameraPermission()
+        if (!cancelled) {
+          setCamGranted(ok)
+          if (ok) setStatus("camera")
+        }
+      }
       if (!livekitConfigured()) return
       setStatus("connecting")
       const token = await fetchLiveToken(room, identity)
       if (cancelled) return
-      // Full LiveKit RN room attach requires native EAS build + @livekit/react-native.
-      // Tonight we mark ready when token exists; UI still uses camera/placeholder frame.
-      setStatus(token ? "livekit-ready" : "fallback")
+      setStatus(token ? "livekit-ready" : camGranted ? "camera" : "fallback")
     })()
     return () => {
       cancelled = true
     }
-  }, [room, identity])
+  }, [room, identity, mode, camGranted])
 
-  const camOk = Boolean(CameraView) && Platform.OS !== "web" && mode === "publish"
+  const camOk =
+    Boolean(CameraView) && Platform.OS !== "web" && mode === "publish" && camGranted
 
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]}>
@@ -52,7 +61,13 @@ export function LiveRoom({
         <CameraView style={StyleSheet.absoluteFill} facing="front" />
       ) : (
         <ImageSlot
-          label={mode === "publish" ? "CAMERA PREVIEW · OR BROWSE FILES" : "LIVE STREAM FRAME · OR BROWSE FILES"}
+          label={
+            mode === "publish"
+              ? camGranted
+                ? "CAMERA READY · NATIVE PREVIEW"
+                : "ALLOW CAMERA TO GO LIVE"
+              : "LIVE STREAM FRAME"
+          }
           height={640}
           radius={0}
         />
@@ -62,8 +77,10 @@ export function LiveRoom({
           {status === "livekit-ready"
             ? "LIVEKIT TOKEN OK"
             : status === "connecting"
-              ? "CONNECTING LIVEKIT…"
-              : "CAMERA FALLBACK"}
+              ? "CONNECTING…"
+              : status === "camera"
+                ? "CAMERA LIVE"
+                : "DEMO FRAME"}
         </Label>
       </View>
     </View>

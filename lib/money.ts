@@ -11,14 +11,20 @@ import {
 export type MoneyMode = MoneyRail
 
 export function moneyMode(): MoneyMode {
-  const mode = (process.env.EXPO_PUBLIC_MONEY_MODE ?? "mock").toLowerCase()
-  if (mode === "stripe") return "stripe"
-  if (mode === "thirdweb" || mode === "testnet") {
-    const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ?? ""
-    const configured =
-      Boolean(clientId) && clientId !== "your_client_id_here" && !clientId.includes("YOUR_")
-    return configured ? "thirdweb" : "mock"
-  }
+  const mode = (process.env.EXPO_PUBLIC_MONEY_MODE ?? "auto").toLowerCase()
+  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
+  const stripeOk =
+    Boolean(stripeKey) && !stripeKey.includes("your_") && stripeKey.startsWith("pk_")
+  const clientId = process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ?? ""
+  const twOk =
+    Boolean(clientId) && clientId !== "your_client_id_here" && !clientId.includes("YOUR_")
+
+  if (mode === "stripe") return stripeOk ? "stripe" : "mock"
+  if (mode === "thirdweb" || mode === "testnet") return twOk ? "thirdweb" : "mock"
+  if (mode === "mock") return "mock"
+  // auto
+  if (stripeOk) return "stripe"
+  if (twOk) return "thirdweb"
   return "mock"
 }
 
@@ -48,8 +54,8 @@ export function fmtBalanceGold(
 
 export const MONEY_FAIL = "No gold moved."
 export const TEST_BADGE = "TEST WALLET · FAKE MONEY"
-export const STRIPE_BADGE = "STRIPE · ESCROW"
-export const THIRDWEB_BADGE = "THIRDWEB · ESCROW"
+export const STRIPE_BADGE = "STRIPE · TEST ESCROW"
+export const THIRDWEB_BADGE = "THIRDWEB · TREASURY"
 export const TESTNET_BADGE = THIRDWEB_BADGE
 
 export function moneyBadgeFor(mode: MoneyMode): string {

@@ -31,12 +31,16 @@ function get(url, headers) {
 }
 
 async function main() {
+  const stripePk = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
+  const stripeOk = stripePk.startsWith("pk_") && !stripePk.includes("your_")
   const out = {
-    EXPO_PUBLIC_MONEY_MODE: process.env.EXPO_PUBLIC_MONEY_MODE || "thirdweb",
+    EXPO_PUBLIC_MONEY_MODE:
+      process.env.EXPO_PUBLIC_MONEY_MODE || (stripeOk ? "auto" : "thirdweb"),
     EXPO_PUBLIC_THIRDWEB_CLIENT_ID: process.env.EXPO_PUBLIC_THIRDWEB_CLIENT_ID || "",
     EXPO_PUBLIC_THIRDWEB_CHAIN: process.env.EXPO_PUBLIC_THIRDWEB_CHAIN || "base-sepolia",
     EXPO_PUBLIC_XAU_USD: process.env.EXPO_PUBLIC_XAU_USD || "2650",
     EXPO_PUBLIC_XAU_CAD: process.env.EXPO_PUBLIC_XAU_CAD || "3520",
+    EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePk,
     EXPO_PUBLIC_SUPABASE_URL:
       process.env.EXPO_PUBLIC_SUPABASE_URL || `https://${REF}.supabase.co`,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "",
@@ -57,7 +61,7 @@ async function main() {
   fs.writeFileSync(".env", body + "\n")
   fs.writeFileSync(".env.local", body + "\n")
   console.log(
-    `[sync-env] wrote .env (anon=${out.EXPO_PUBLIC_SUPABASE_ANON_KEY ? "yes" : "no"}, thirdweb=${out.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ? "yes" : "no"})`,
+    `[sync-env] wrote .env (anon=${out.EXPO_PUBLIC_SUPABASE_ANON_KEY ? "yes" : "no"}, thirdweb=${out.EXPO_PUBLIC_THIRDWEB_CLIENT_ID ? "yes" : "no"}, stripe=${stripeOk ? "yes" : "no"})`,
   )
 }
 

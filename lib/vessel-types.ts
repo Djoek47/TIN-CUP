@@ -30,6 +30,7 @@ export type AppUser = {
   link: string
   adult: boolean
   address: `0x${string}` | null
+  photoUri?: string | null
 }
 
 /** Balances are canonical gold_mg; fiat is derived for display */
