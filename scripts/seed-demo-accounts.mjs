@@ -22,7 +22,7 @@ const ACCOUNTS = [
     id: "0x1111111111111111111111111111111111111111",
     handle: "dusty",
     display_name: "Dusty",
-    bio: "Mock peasant — go live, challenges, cash out, ascend.",
+    bio: "Vagrant QA — go live, challenges, cash out, ascend.",
     fate: "vagrant",
     is_lord: false,
     available: 250,
@@ -33,7 +33,7 @@ const ACCOUNTS = [
     id: "0x2222222222222222222222222222222222222222",
     handle: "baron",
     display_name: "Baron",
-    bio: "Mock lord — fund bounties, pour gifts, court.",
+    bio: "Lord QA — fund bounties, pour gifts, court.",
     fate: "lord",
     is_lord: true,
     available: 2500,
@@ -101,20 +101,10 @@ async function main() {
     console.log(`✓ ${a.role} @${a.handle} ${a.id.slice(0, 10)}… · $${a.available + a.hold} mock`)
   }
 
-  // One open beg authored by vagrant for lord to gift into
+  // Clear old seed begs — feeds should only show real composed begs
   const vagrantId = ACCOUNTS[0].id.toLowerCase()
   await supabase.from("begs").delete().eq("author_id", vagrantId).eq("title", "Mock rent beg")
-  const { error: bErr } = await supabase.from("begs").insert({
-    author_id: vagrantId,
-    title: "Mock rent beg",
-    story: "Seeded beg for dual-account gift QA.",
-    goal_cents: 200000,
-    raised_cents: 123500,
-    backers: 12,
-    status: "open",
-  })
-  if (bErr) throw bErr
-  console.log("✓ Seed beg for @dusty")
+  console.log("✓ Cleared seed begs (compose real ones in-app)")
 
   console.log("\nDone. In the app: Connect → ENTER AS VAGRANT / ENTER AS LORD")
 }
