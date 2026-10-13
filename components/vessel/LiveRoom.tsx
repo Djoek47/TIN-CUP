@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Platform, Pressable, StyleSheet, View } from "react-native"
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera"
-import { Label, UiText } from "@/components/vessel"
+import { Label, UiText } from "@/components/vessel/MonoNum"
 import { useVessel } from "@/providers/VesselTheme"
 
 /**
