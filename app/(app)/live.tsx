@@ -100,7 +100,11 @@ export default function LiveScreen() {
     <VesselScreen pad={false}>
       <View style={{ flex: 1 }}>
         <View style={[styles.frame, { backgroundColor: v.surf }]}>
-          <LiveRoom mode="subscribe" identity={host || "host"} />
+          <LiveRoom
+            mode="subscribe"
+            room={active?.room_name || undefined}
+            identity={host || "host"}
+          />
         </View>
 
         <View style={[styles.top, { paddingHorizontal: space.screenPad }]}>

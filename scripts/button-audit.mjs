@@ -59,7 +59,7 @@ for (const file of appFiles) {
 
 // Required wired screens + CTAs
 const required = [
-  ["app/(auth)/sign-in.tsx", ["ENTER AS VAGRANT", "ENTER AS LORD", "connectDemo", "CONTINUE WITH EMAIL"]],
+  ["app/(auth)/sign-in.tsx", ["ENTER AS VAGRANT", "ENTER AS LORD", "connectDemo", "CONTINUE WITH EMAIL", "signInWithApple", "signInWithGoogle"]],
   ["app/(app)/index.tsx", ["GO LIVE", "COMPOSE BEG", "LIVE NOW", "OPEN BEGS"]],
   ["app/(app)/golive.tsx", ["HOLD TO GO LIVE", "isLord", "POUR INTO SOMEONE"]],
   ["app/(app)/broadcast.tsx", ["END", "LiveRoom", "endLiveSession"]],
@@ -69,9 +69,9 @@ const required = [
   ["app/(app)/deposit.tsx", ["deposit", "PAY WITH STRIPE", "initPaymentSheet"]],
   ["app/(app)/cash-out.tsx", ["cashOut", "isLord", "LORDS PUT IN"]],
   ["app/(app)/send.tsx", ["gift", "POUR"]],
-  ["app/(app)/settings.tsx", ["switchDemo", "SIGN OUT", "SWITCH ACCOUNT"]],
+  ["app/(app)/settings.tsx", ["switchDemo", "SIGN OUT", "SWITCH ACCOUNT", "startConnectOnboarding", "registerPushToken"]],
   ["components/vessel/BottomNav.tsx", ["golive", "send", "isLord", "wallet", "live"]],
-  ["components/vessel/LiveRoom.tsx", ["CameraView", "CAMERA ON PHONE", "ALLOW CAMERA"]],
+  ["components/vessel/LiveRoom.tsx", ["CameraView", "CAMERA ON PHONE", "ALLOW CAMERA", "fetchLiveKitToken"]],
 ]
 
 for (const [file, needles] of required) {
@@ -89,7 +89,16 @@ for (const [file, needles] of required) {
 
 // Dual-caste logic gates in AppState
 const appState = fs.readFileSync(path.join(root, "providers/AppState.tsx"), "utf8")
-for (const n of ["connectDemo", "enterChallenge", "fundBounty", "cashOut", "ascendLord", "gift", "deposit"]) {
+for (const n of [
+  "connectDemo",
+  "hydrateFromAuth",
+  "enterChallenge",
+  "fundBounty",
+  "cashOut",
+  "ascendLord",
+  "gift",
+  "deposit",
+]) {
   if (!appState.includes(n)) fail.push(`AppState missing ${n}`)
   else pass.push(`AppState ← ${n}`)
 }

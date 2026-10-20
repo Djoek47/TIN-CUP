@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { ScrollView, View, Pressable, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import {
@@ -20,7 +21,12 @@ import { pure, space } from "@/theme/vessel"
 export default function WalletScreen() {
   const router = useRouter()
   const { v, isLord } = useVessel()
-  const { balance, ledger, moneyBadge, say, prefs, setPrefs } = useApp()
+  const { balance, ledger, moneyBadge, say, prefs, setPrefs, refreshFromServer, authUserId } =
+    useApp()
+
+  useEffect(() => {
+    if (authUserId) void refreshFromServer()
+  }, [authUserId, refreshFromServer])
   const hidden = balance.hidden || prefs.hideAmt
   const fill = Math.min(
     1,

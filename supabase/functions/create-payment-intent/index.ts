@@ -18,7 +18,12 @@ serve(async (req) => {
       })
     }
 
-    const { amount_cents, currency = "usd" } = await req.json()
+    const {
+      amount_cents,
+      currency = "usd",
+      user_id,
+      xau_rate,
+    } = await req.json()
     if (!amount_cents || amount_cents < 50) {
       return new Response(JSON.stringify({ error: "amount_cents must be >= 50" }), {
         status: 400,
@@ -30,6 +35,8 @@ serve(async (req) => {
     body.set("amount", String(amount_cents))
     body.set("currency", String(currency).toLowerCase())
     body.set("automatic_payment_methods[enabled]", "true")
+    if (user_id) body.set("metadata[user_id]", String(user_id))
+    if (xau_rate) body.set("metadata[xau_rate]", String(xau_rate))
 
     const stripeRes = await fetch("https://api.stripe.com/v1/payment_intents", {
       method: "POST",

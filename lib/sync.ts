@@ -117,3 +117,60 @@ export async function fetchNotifications(address: string) {
   }
   return data ?? []
 }
+
+/** Dual-entry: credit recipient profile gold when pouring to a known peer (demo / local). */
+export async function creditPeerBalance(params: {
+  peerAddress: string
+  goldMg: number
+  fiatCents: number
+  currency: string
+}) {
+  if (!isSupabaseConfigured || !params.peerAddress) return
+  const id = params.peerAddress.toLowerCase()
+  const { data } = await supabase
+    .from("profiles")
+    .select("gold_mg_available, gold_mg_total, balance_cents")
+    .eq("id", id)
+    .maybeSingle()
+  const avail = Number(data?.gold_mg_available || 0) + params.goldMg
+  const total = Number(data?.gold_mg_total || 0) + params.goldMg
+  const balanceCents = Number(data?.balance_cents || 0) + params.fiatCents
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      gold_mg_available: avail,
+      gold_mg_total: total,
+      balance_cents: balanceCents,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+  if (error) console.warn("[sync] creditPeerBalance", error.message)
+
+  await supabase.from("ledger_entries").insert({
+    user_id: id,
+    kind: "gift",
+    amount_cents: params.fiatCents,
+    description: "Pour received",
+    gold_mg: params.goldMg,
+    fiat_cents: params.fiatCents,
+    currency: params.currency,
+    rail: "mock",
+    escrow_status: "held",
+  })
+}
+
+export async function insertGiftRow(params: {
+  senderId: string
+  recipientId: string
+  amountCents: number
+  message?: string
+}) {
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase.from("gifts").insert({
+    sender_id: params.senderId.toLowerCase(),
+    recipient_id: params.recipientId.toLowerCase(),
+    amount_cents: params.amountCents,
+    message: params.message ?? null,
+  })
+  if (error) console.warn("[sync] insertGiftRow", error.message)
+}

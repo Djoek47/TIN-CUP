@@ -69,7 +69,11 @@ export default function GoLiveScreen() {
       if (!session) say("Live lobby sync deferred — camera still opens")
       router.replace({
         pathname: "/(app)/broadcast",
-        params: { title, goal: String(GOALS[goal]) },
+        params: {
+          title,
+          goal: String(GOALS[goal]),
+          room: session?.room_name || "",
+        },
       } as any)
     } finally {
       setBusy(false)

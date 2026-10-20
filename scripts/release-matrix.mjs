@@ -81,7 +81,7 @@ for (const needle of [
 
 // Screens must wire critical CTAs
 const wires = [
-  ["app/(auth)/sign-in.tsx", ["ENTER AS VAGRANT", "ENTER AS LORD", "connectDemo"]],
+  ["app/(auth)/sign-in.tsx", ["ENTER AS VAGRANT", "ENTER AS LORD", "connectDemo", "signInWithApple"]],
   ["app/(app)/arena.tsx", ["enterChallenge", "fundBounty"]],
   ["app/(app)/deposit.tsx", ["stripeConfigured", "initPaymentSheet", "deposit"]],
   ["app/(app)/cash-out.tsx", ["isLord", "cashOut", "LORDS PUT IN"]],

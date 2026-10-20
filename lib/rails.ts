@@ -24,15 +24,16 @@ export async function ensureStripeReady(): Promise<boolean> {
 export async function stripeDeposit(
   amountFiat: number,
   currency: FiatCurrency,
+  opts?: { userId?: string | null },
 ): Promise<{ ok: boolean; paymentIntentId?: string; clientSecret?: string; rate: number }> {
   const rate = xauSpot(currency)
   const ready = await ensureStripeReady()
   if (!ready) return { ok: false, rate }
   try {
-    const intent = await createPaymentIntent(
-      Math.round(amountFiat * 100),
-      currency.toLowerCase(),
-    )
+    const intent = await createPaymentIntent(Math.round(amountFiat * 100), currency.toLowerCase(), {
+      userId: opts?.userId,
+      xauRate: rate,
+    })
     return {
       ok: true,
       paymentIntentId: intent.paymentIntentId,

@@ -17,6 +17,14 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       type: "sourceFile",
     }
   }
+  if (
+    platform === "web" &&
+    (moduleName === "@livekit/react-native" ||
+      moduleName === "@livekit/react-native-webrtc" ||
+      moduleName.startsWith("@livekit/react-native/"))
+  ) {
+    return { type: "empty" }
+  }
   return context.resolveRequest(context, moduleName, platform)
 }
 

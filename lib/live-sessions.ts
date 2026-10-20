@@ -1,8 +1,8 @@
 /**
- * Live sessions — who is on camera (Apple / expo-camera hosts).
- * No LiveKit. Presence is stored in Supabase for the viewer lobby.
+ * Live sessions — presence in Supabase + LiveKit room_name for media.
  */
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { roomNameForHost } from "@/lib/livekit"
 
 export type LiveSession = {
   id: string
@@ -14,6 +14,7 @@ export type LiveSession = {
   category: string
   audience: string
   started_at: string
+  room_name?: string | null
 }
 
 export async function startLiveSession(params: {
@@ -25,7 +26,8 @@ export async function startLiveSession(params: {
   audience: string
 }): Promise<LiveSession | null> {
   if (!isSupabaseConfigured) return null
-  // End any prior open session for this host
+  const room_name = roomNameForHost(params.hostId)
+
   await supabase
     .from("live_sessions")
     .update({ ended_at: new Date().toISOString() })
@@ -42,6 +44,7 @@ export async function startLiveSession(params: {
       raised_cents: 0,
       category: params.category,
       audience: params.audience,
+      room_name,
     })
     .select("*")
     .single()

@@ -46,7 +46,7 @@ const mustContain = [
   ["app/(app)/send.tsx", ["DEMO_ACCOUNTS", "gift", "RECIPIENTS"]],
   ["app/beg-details.tsx", ["gift(", "WATCH LIVE"]],
   ["app/challenge-details.tsx", ["enterChallenge", "fundBounty", "GO RECORD"]],
-  ["providers/AppState.tsx", ["connectDemo", "enterChallenge", "fundBounty"]],
+  ["providers/AppState.tsx", ["connectDemo", "hydrateFromAuth", "enterChallenge", "fundBounty"]],
   ["lib/demo-accounts.ts", ["DEMO_VAGRANT", "DEMO_LORD"]],
 ]
 

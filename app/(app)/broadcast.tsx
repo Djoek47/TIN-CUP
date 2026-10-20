@@ -19,12 +19,13 @@ export default function BroadcastScreen() {
   const router = useRouter()
   const { v } = useVessel()
   const { say, user } = useApp()
-  const params = useLocalSearchParams<{ title?: string; goal?: string }>()
+  const params = useLocalSearchParams<{ title?: string; goal?: string; room?: string }>()
   const [secs, setSecs] = useState(0)
   const [muted, setMuted] = useState(false)
   const [facing, setFacing] = useState<"front" | "back">("front")
   const goal = Number(params.goal || 2000) || 2000
   const title = params.title || "Live"
+  const room = params.room || (user.address ? `obol-${user.address.slice(0, 12)}` : undefined)
 
   useEffect(() => {
     const tick = setInterval(() => setSecs((s) => s + 1), 1000)
@@ -45,6 +46,7 @@ export default function BroadcastScreen() {
       <View style={{ flex: 1 }}>
         <LiveRoom
           mode="publish"
+          room={room}
           identity={user.handle || "host"}
           facing={facing}
           muted={muted}

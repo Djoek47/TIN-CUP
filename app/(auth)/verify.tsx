@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { View, StyleSheet, TextInput, Pressable } from "react-native"
-import { useRouter } from "expo-router"
+import { useLocalSearchParams, useRouter, type Href } from "expo-router"
 import {
   VesselScreen,
   ScreenHeader,
@@ -12,15 +12,19 @@ import {
 } from "@/components/vessel"
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
+import { signInWithEmailOtp, verifyEmailOtp } from "@/lib/auth"
 import { pure, space } from "@/theme/vessel"
 
-/** VERIFY — fake 6-digit OTP (any 6 digits ok) */
+/** VERIFY — real Supabase email OTP */
 export default function Verify() {
   const router = useRouter()
   const { v } = useVessel()
-  const { say } = useApp()
+  const { hydrateFromAuth, say } = useApp()
+  const params = useLocalSearchParams<{ email?: string }>()
+  const email = String(params.email || "").trim().toLowerCase()
   const [code, setCode] = useState("")
   const [secs, setSecs] = useState(34)
+  const [busy, setBusy] = useState(false)
   const inputRef = useRef<TextInput>(null)
 
   useEffect(() => {
@@ -30,11 +34,34 @@ export default function Verify() {
   }, [secs])
 
   const digits = Array.from({ length: 6 }, (_, i) => code[i] ?? "")
-  const ready = code.length === 6
+  const ready = code.length === 6 && !!email
 
-  const resend = () => {
-    setSecs(24)
-    say("New code sent")
+  const resend = async () => {
+    if (!email) {
+      say("Missing email")
+      return
+    }
+    try {
+      await signInWithEmailOtp(email)
+      setSecs(24)
+      say("New code sent")
+    } catch (e: any) {
+      say(e?.message || "Resend failed")
+    }
+  }
+
+  const continueVerify = async () => {
+    if (!ready || busy) return
+    setBusy(true)
+    try {
+      await verifyEmailOtp(email, code)
+      await hydrateFromAuth()
+      router.replace("/(onboarding)/choose-fate" as Href)
+    } catch (e: any) {
+      say(e?.message || "Invalid code")
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -46,7 +73,9 @@ export default function Verify() {
           Check your{"\n"}email
         </UiText>
         <UiText weight="reg" style={{ fontSize: 13, color: v.dim, marginTop: 10 }}>
-          Enter the six-digit code from your email.
+          {email
+            ? `Enter the six-digit code sent to ${email}.`
+            : "Enter the six-digit code from your email."}
         </UiText>
 
         <View style={styles.boxes}>
@@ -97,21 +126,19 @@ export default function Verify() {
           <View style={[styles.pulse, { backgroundColor: pure.lime }]} />
           <View>
             <UiText weight="semi" style={{ fontSize: 13, color: v.ink }}>
-              Creating your wallet
+              Securing your session
             </UiText>
-            <Label style={{ marginTop: 4, color: v.faint }}>
-              NO SEED PHRASE · GAS COVERED
-            </Label>
+            <Label style={{ marginTop: 4, color: v.faint }}>SUPABASE AUTH</Label>
           </View>
         </View>
       </Pressable>
 
       <View style={styles.footer}>
         <PrimaryButton
-          title="CONTINUE"
+          title={busy ? "VERIFYING…" : "CONTINUE"}
           tone="amb"
-          disabled={!ready}
-          onPress={() => router.push("/(onboarding)/choose-fate")}
+          disabled={!ready || busy}
+          onPress={continueVerify}
         />
       </View>
     </VesselScreen>

@@ -35,7 +35,22 @@ import {
   ThemeMode,
 } from "@/lib/vessel-types"
 import { VesselThemeProvider } from "@/providers/VesselTheme"
-import { insertLedger, insertNotification, upsertProfile } from "@/lib/sync"
+import {
+  creditPeerBalance,
+  fetchRemoteLedger,
+  insertGiftRow,
+  insertLedger,
+  insertNotification,
+  upsertProfile,
+} from "@/lib/sync"
+import { getAuthUser, getSession, onAuthStateChange, signOutAuth } from "@/lib/auth"
+import {
+  fetchProfileBalance,
+  requestCashOutPayout,
+  rpcHoldGold,
+  rpcSendGoldGift,
+} from "@/lib/money-api"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 const KEY = "obol_vessel_v1"
 
@@ -57,6 +72,10 @@ type AppCtx = {
   connect: (method?: string) => Promise<void>
   /** Load a fixed Supabase-seeded mock identity (vagrant or lord). */
   connectDemo: (role: DemoRole) => Promise<void>
+  /** Hydrate AppState from Supabase Auth session + profiles row. */
+  hydrateFromAuth: () => Promise<void>
+  /** Pull gold_mg + ledger from server when authenticated. */
+  refreshFromServer: () => Promise<void>
   disconnect: () => Promise<void>
   setTheme: (t: ThemeMode) => void
   setPrefs: (p: Partial<Prefs>) => void
@@ -66,12 +85,18 @@ type AppCtx = {
   gift: (to: string, amountFiat: number, message?: string) => Promise<void>
   cashOut: (amountFiat: number) => Promise<void>
   addFundsMock: (amountFiat: number) => Promise<void>
-  deposit: (amountFiat: number, currency?: FiatCurrency) => Promise<void>
+  deposit: (
+    amountFiat: number,
+    currency?: FiatCurrency,
+    opts?: { paymentIntentId?: string; awaitServerMint?: boolean },
+  ) => Promise<void>
   /** Vagrant enters a challenge (mock entry stake). */
   enterChallenge: (title: string, entryFiat?: number) => Promise<void>
   /** Lord funds a bounty (mock escrow out). */
   fundBounty: (title: string, amountFiat: number) => Promise<void>
   demoRole: DemoRole | null
+  /** Supabase auth user id when signed in via Apple/Google/email. */
+  authUserId: string | null
 }
 
 const defaultUser: AppUser = {
@@ -166,6 +191,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [ledger, setLedger] = useState<LedgerEntry[]>(SEED_LEDGER)
   const [prefs, setPrefsState] = useState<Prefs>(defaultPrefs)
   const [toast, setToast] = useState<Toast>(null)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
 
   const mode = moneyMode()
   const isMock = mode === "mock"
@@ -199,10 +225,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           if (data.ledger) setLedger(migrateLedger(data.ledger))
           if (data.prefs) setPrefsState({ ...defaultPrefs, ...data.prefs })
         }
+        const session = await getSession()
+        if (session?.user?.id) setAuthUserId(session.user.id)
       } finally {
         setReady(true)
       }
     })()
+    const { data } = onAuthStateChange((session) => {
+      setAuthUserId(session?.user?.id ?? null)
+    })
+    return () => data.subscription.unsubscribe()
   }, [])
 
   const say = useCallback((text: string) => {
@@ -267,7 +299,83 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [say, theme],
   )
 
+  const refreshFromServer = useCallback(async () => {
+    const uid = authUserId || user.address
+    if (!uid) return
+    const remote = await fetchProfileBalance(uid)
+    if (remote) {
+      setBalance(remote)
+      await persist({ balance: remote })
+    }
+    const remoteLedger = await fetchRemoteLedger(uid)
+    if (remoteLedger?.length) {
+      setLedger(remoteLedger)
+      await persist({ ledger: remoteLedger, balance: remote ?? balance })
+    }
+  }, [authUserId, balance, persist, user.address])
+
+  const hydrateFromAuth = useCallback(async () => {
+    const authUser = await getAuthUser()
+    if (!authUser) {
+      say("No auth session")
+      return
+    }
+    setAuthUserId(authUser.id)
+    const meta = authUser.user_metadata || {}
+    const handleGuess =
+      String(meta.preferred_username || meta.user_name || meta.full_name || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "")
+        .slice(0, 16) || `user_${authUser.id.slice(0, 6)}`
+    let profile: any = null
+    if (isSupabaseConfigured) {
+      const { data } = await supabase.from("profiles").select("*").eq("id", authUser.id).maybeSingle()
+      profile = data
+      if (!profile) {
+        await supabase.from("profiles").upsert({
+          id: authUser.id,
+          handle: handleGuess,
+          display_name: meta.full_name || meta.name || handleGuess,
+          fate: "vagrant",
+          is_lord: false,
+          onboarded: false,
+          auth_user_id: authUser.id,
+          updated_at: new Date().toISOString(),
+        })
+        const again = await supabase.from("profiles").select("*").eq("id", authUser.id).maybeSingle()
+        profile = again.data
+      }
+    }
+    const nextUser: AppUser = {
+      handle: profile?.handle || handleGuess,
+      displayName: profile?.display_name || meta.full_name || handleGuess,
+      bio: profile?.bio || defaultUser.bio,
+      location: "",
+      link: "obol.app",
+      adult: false,
+      address: authUser.id,
+    }
+    const nextCaste: Caste = profile?.is_lord || profile?.fate === "lord" ? "lord" : "vagrant"
+    const nextBal =
+      (await fetchProfileBalance(authUser.id)) ||
+      withFiatMirrors({
+        gold_mg_available: Number(profile?.gold_mg_available || 0),
+        gold_mg_hold: Number(profile?.gold_mg_hold || 0),
+        gold_mg_total: Number(profile?.gold_mg_total || 0),
+        hidden: false,
+        displayCurrency: (profile?.display_currency as FiatCurrency) || "USD",
+        massUnit: (profile?.mass_unit as Balance["massUnit"]) || "g",
+      })
+    setUser(nextUser)
+    setCaste(nextCaste)
+    setBalance(nextBal)
+    await persist({ user: nextUser, caste: nextCaste, balance: nextBal })
+    say("Signed in")
+  }, [persist, say])
+
   const disconnect = useCallback(async () => {
+    await signOutAuth()
+    setAuthUserId(null)
     const nextUser = { ...defaultUser, address: null }
     setUser(nextUser)
     setCaste("vagrant")
@@ -403,12 +511,30 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user])
 
   const gift = useCallback(
-    async (to: string, amountFiat: number, _message?: string) => {
+    async (to: string, amountFiat: number, message?: string) => {
       const mg = fiatToGoldMg(amountFiat, prefs.currency)
       if (amountFiat <= 0 || mg > balance.gold_mg_available) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
       }
+
+      // Authenticated path: server dual-entry transfer
+      if (authUserId) {
+        try {
+          await rpcSendGoldGift({
+            toHandle: to,
+            amountFiat,
+            currency: prefs.currency,
+            message,
+          })
+          await refreshFromServer()
+          say(`Poured to ${to}`)
+          return
+        } catch (e) {
+          console.warn("[gift] rpc failed, falling back to local dual-entry", e)
+        }
+      }
+
       const nextBal = withFiatMirrors({
         ...balance,
         gold_mg_available: balance.gold_mg_available - mg,
@@ -437,14 +563,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           title: "Gold poured",
           body: `${amountFiat} ${prefs.currency} → ${to}`,
         })
-        // Cross-account mock: notify the other demo identity when handle matches
+        const handle = to.replace(/^@/, "").toLowerCase()
         const peer =
-          to.replace(/^@/, "").toLowerCase() === DEMO_ACCOUNTS.vagrant.user.handle
+          handle === DEMO_ACCOUNTS.vagrant.user.handle
             ? DEMO_ACCOUNTS.vagrant
-            : to.replace(/^@/, "").toLowerCase() === DEMO_ACCOUNTS.lord.user.handle
+            : handle === DEMO_ACCOUNTS.lord.user.handle
               ? DEMO_ACCOUNTS.lord
               : null
         if (peer && peer.address.toLowerCase() !== user.address.toLowerCase()) {
+          await creditPeerBalance({
+            peerAddress: peer.address,
+            goldMg: mg,
+            fiatCents: Math.round(amountFiat * 100),
+            currency: prefs.currency,
+          })
+          await insertGiftRow({
+            senderId: user.address,
+            recipientId: peer.address,
+            amountCents: Math.round(amountFiat * 100),
+            message,
+          })
           await insertNotification({
             address: peer.address,
             kind: "gift",
@@ -455,7 +593,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       say(`Poured to ${to}`)
     },
-    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
+    [
+      authUserId,
+      balance,
+      caste,
+      ledger,
+      makeEntry,
+      persist,
+      prefs.currency,
+      refreshFromServer,
+      say,
+      user,
+    ],
   )
 
   const enterChallenge = useCallback(
@@ -468,6 +617,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (mg > balance.gold_mg_available) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
+      }
+      if (authUserId) {
+        try {
+          await rpcHoldGold({
+            amountFiat: entryFiat,
+            kind: "challenge",
+            label: title,
+            currency: prefs.currency,
+          })
+          await refreshFromServer()
+          say(`Entered · ${title}`)
+          return
+        } catch (e) {
+          console.warn("[enterChallenge] rpc", e)
+        }
       }
       const nextBal = withFiatMirrors({
         ...balance,
@@ -500,7 +664,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       say(`Entered · ${title}`)
     },
-    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
+    [
+      authUserId,
+      balance,
+      caste,
+      ledger,
+      makeEntry,
+      persist,
+      prefs.currency,
+      refreshFromServer,
+      say,
+      user,
+    ],
   )
 
   const fundBounty = useCallback(
@@ -513,6 +688,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (amountFiat <= 0 || mg > balance.gold_mg_available) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
+      }
+      if (authUserId) {
+        try {
+          await rpcHoldGold({
+            amountFiat,
+            kind: "bounty",
+            label: title,
+            currency: prefs.currency,
+          })
+          await refreshFromServer()
+          say(`Bounty funded · ${title}`)
+          return
+        } catch (e) {
+          console.warn("[fundBounty] rpc", e)
+        }
       }
       const nextBal = withFiatMirrors({
         ...balance,
@@ -545,7 +735,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       say(`Bounty funded · ${title}`)
     },
-    [balance, caste, ledger, makeEntry, persist, prefs.currency, say, user],
+    [
+      authUserId,
+      balance,
+      caste,
+      ledger,
+      makeEntry,
+      persist,
+      prefs.currency,
+      refreshFromServer,
+      say,
+      user,
+    ],
   )
 
   const cashOut = useCallback(
@@ -559,7 +760,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         say(MONEY_FAIL)
         throw new Error(MONEY_FAIL)
       }
-      // Release from available → escrow released out of platform
+
+      if (authUserId && mode === "stripe") {
+        try {
+          await requestCashOutPayout(amountFiat, prefs.currency)
+          await refreshFromServer()
+          say("Cash out sent")
+          return
+        } catch (e: any) {
+          // Fall through to local queue when Connect not ready
+          console.warn("[cashOut] payout", e?.message || e)
+          if (String(e?.message || "").includes("Connect")) {
+            say(e.message)
+            throw e
+          }
+        }
+      }
+
       const nextBal = withFiatMirrors({
         ...balance,
         gold_mg_available: balance.gold_mg_available - mg,
@@ -591,15 +808,50 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       say(`Cash out queued`)
     },
-    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say, user],
+    [
+      authUserId,
+      balance,
+      caste,
+      ledger,
+      makeEntry,
+      mode,
+      persist,
+      prefs.currency,
+      refreshFromServer,
+      say,
+      user,
+    ],
   )
 
   const deposit = useCallback(
-    async (amountFiat: number, currency?: FiatCurrency) => {
+    async (
+      amountFiat: number,
+      currency?: FiatCurrency,
+      opts?: { paymentIntentId?: string; awaitServerMint?: boolean },
+    ) => {
       const cur = currency ?? prefs.currency
-      // PaymentSheet / PaymentIntent lives in deposit screen; this only mints escrow ledger.
+
+      // Stripe path: prefer server webhook mint, then refresh
+      if (opts?.awaitServerMint && authUserId) {
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 700))
+          const remote = await fetchProfileBalance(authUserId)
+          if (remote && remote.gold_mg_total > balance.gold_mg_total) {
+            setBalance(remote)
+            await persist({ balance: remote })
+            const remoteLedger = await fetchRemoteLedger(authUserId)
+            if (remoteLedger?.length) {
+              setLedger(remoteLedger)
+              await persist({ balance: remote, ledger: remoteLedger })
+            }
+            say("Escrow credited")
+            return
+          }
+        }
+        // Webhook slow — optimistic local mint once so UX isn't blocked
+      }
+
       const mg = fiatToGoldMg(amountFiat, cur)
-      // New deposits enter escrow hold, then a portion is available (demo: 70% available / 30% hold)
       const holdMg = mg * 0.3
       const availMg = mg - holdMg
       const nextBal = withFiatMirrors({
@@ -610,7 +862,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         gold_mg_total: balance.gold_mg_total + mg,
       })
       const entry = makeEntry({
-        id: `d-${Date.now()}`,
+        id: opts?.paymentIntentId || `d-${Date.now()}`,
         dir: "in",
         who: mode === "stripe" ? "Deposit · Stripe escrow" : mode === "thirdweb" ? "Deposit · treasury" : "Deposit · escrow",
         gold_mg: mg,
@@ -635,7 +887,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
       say(`Escrow credited`)
     },
-    [balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say, user],
+    [authUserId, balance, caste, ledger, makeEntry, mode, persist, prefs.currency, say, user],
   )
 
   const addFundsMock = useCallback(
@@ -663,6 +915,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       say,
       connect,
       connectDemo,
+      hydrateFromAuth,
+      refreshFromServer,
       disconnect,
       setTheme,
       setPrefs,
@@ -676,6 +930,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       enterChallenge,
       fundBounty,
       demoRole,
+      authUserId,
     }),
     [
       ready,
@@ -692,6 +947,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       say,
       connect,
       connectDemo,
+      hydrateFromAuth,
+      refreshFromServer,
       disconnect,
       setTheme,
       setPrefs,
@@ -705,6 +962,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       enterChallenge,
       fundBounty,
       demoRole,
+      authUserId,
     ],
   )
 

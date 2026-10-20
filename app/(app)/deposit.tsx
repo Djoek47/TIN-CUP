@@ -25,7 +25,7 @@ import { space } from "@/theme/vessel"
 export default function DepositScreen() {
   const router = useRouter()
   const { v } = useVessel()
-  const { deposit, prefs, setPrefs, moneyMode } = useApp()
+  const { deposit, prefs, setPrefs, moneyMode, authUserId } = useApp()
   const { initPaymentSheet, presentPaymentSheet } = useStripe()
   const [amount, setAmount] = useState(100)
   const [busy, setBusy] = useState(false)
@@ -37,30 +37,37 @@ export default function DepositScreen() {
     if (busy || amount <= 0) return
     setBusy(true)
     try {
-      if (stripeOn || moneyMode === "stripe") {
+      const requireStripe = stripeOn || moneyMode === "stripe"
+      if (requireStripe) {
         await ensureStripeReady()
-        const intent = await stripeDeposit(amount, currency)
-        if (intent.ok && intent.clientSecret) {
-          const { error: initErr } = await initPaymentSheet({
-            paymentIntentClientSecret: intent.clientSecret,
-            merchantDisplayName: "0bol",
-          })
-          if (initErr) throw new Error(initErr.message)
-          const { error: presentErr } = await presentPaymentSheet()
-          if (presentErr) {
-            if (presentErr.code !== "Canceled") {
-              Alert.alert("Payment failed", presentErr.message)
-            }
-            return
-          }
-        } else {
+        const intent = await stripeDeposit(amount, currency, { userId: authUserId })
+        if (!intent.ok || !intent.clientSecret) {
           Alert.alert(
             "Card deposit unavailable",
-            "Couldn’t reach the payment service. Adding gold to escrow locally instead.",
+            "Couldn’t reach the payment service. Gold was not added.",
           )
+          return
         }
+        const { error: initErr } = await initPaymentSheet({
+          paymentIntentClientSecret: intent.clientSecret,
+          merchantDisplayName: "0bol",
+        })
+        if (initErr) throw new Error(initErr.message)
+        const { error: presentErr } = await presentPaymentSheet()
+        if (presentErr) {
+          if (presentErr.code !== "Canceled") {
+            Alert.alert("Payment failed", presentErr.message)
+          }
+          return
+        }
+        // Server webhook mints gold; refresh local ledger after capture.
+        await deposit(amount, currency, {
+          paymentIntentId: intent.paymentIntentId,
+          awaitServerMint: true,
+        })
+      } else {
+        await deposit(amount, currency)
       }
-      await deposit(amount, currency)
       router.replace("/(app)/wallet")
     } catch (e: any) {
       Alert.alert("Deposit failed", e?.message || "Try again")

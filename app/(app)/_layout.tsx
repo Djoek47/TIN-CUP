@@ -1,9 +1,26 @@
-import { Tabs } from "expo-router"
+import { useEffect } from "react"
+import { Tabs, useRouter } from "expo-router"
 import { vesselColors } from "@/theme/vessel"
+import { useApp } from "@/providers/AppState"
+import { demoAuthAllowed } from "@/lib/auth"
 
-/** Vessel tabs — BottomNav lives in VesselScreen; hide default tab bar. */
+/** Vessel tabs — require session (auth or demo) for money/live surfaces. */
 export default function AppTabsLayout() {
   const bg = vesselColors("vagrant", "dark").bg
+  const { ready, user, authUserId } = useApp()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!ready) return
+    const signedIn = Boolean(user.address || authUserId)
+    if (!signedIn) {
+      router.replace("/(auth)/welcome")
+    }
+  }, [ready, user.address, authUserId, router])
+
+  // Keep demo QA paths working without blocking paint
+  void demoAuthAllowed
+
   return (
     <Tabs
       tabBar={() => null}
@@ -37,7 +54,6 @@ export default function AppTabsLayout() {
       <Tabs.Screen name="ponr" options={{ href: null }} />
       <Tabs.Screen name="coronation" options={{ href: null }} />
 
-      {/* Legacy routes kept reachable but out of nav */}
       <Tabs.Screen name="feed" options={{ href: null }} />
       <Tabs.Screen name="lobbies" options={{ href: null }} />
       <Tabs.Screen name="live-stream" options={{ href: null }} />

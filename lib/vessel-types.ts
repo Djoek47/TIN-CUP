@@ -29,7 +29,8 @@ export type AppUser = {
   location: string
   link: string
   adult: boolean
-  address: `0x${string}` | null
+  /** Wallet address (0x…) or Supabase auth user id */
+  address: string | null
   photoUri?: string | null
 }
 

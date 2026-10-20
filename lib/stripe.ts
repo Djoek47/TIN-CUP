@@ -21,11 +21,20 @@ export function stripeConfigured(): boolean {
  * Create a PaymentIntent via Supabase Edge Function `create-payment-intent`.
  * Falls back to null when function/secret missing (caller mints mock escrow).
  */
-export async function createPaymentIntent(amountCents: number, currency = "usd") {
+export async function createPaymentIntent(
+  amountCents: number,
+  currency = "usd",
+  opts?: { userId?: string | null; xauRate?: number },
+) {
   if (!isSupabaseConfigured) throw new Error("Supabase not configured")
 
   const { data, error } = await supabase.functions.invoke("create-payment-intent", {
-    body: { amount_cents: amountCents, currency },
+    body: {
+      amount_cents: amountCents,
+      currency,
+      user_id: opts?.userId || undefined,
+      xau_rate: opts?.xauRate,
+    },
   })
 
   if (error) throw error

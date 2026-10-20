@@ -1,4 +1,5 @@
-import { ScrollView, View, Pressable, Switch, StyleSheet, Alert } from "react-native"
+import { useEffect, useState } from "react"
+import { ScrollView, View, Pressable, Switch, StyleSheet, Alert, Linking } from "react-native"
 import { useRouter } from "expo-router"
 import {
   VesselScreen,
@@ -11,7 +12,11 @@ import {
 import { useApp } from "@/providers/AppState"
 import { useVessel } from "@/providers/VesselTheme"
 import { DEMO_ACCOUNTS, type DemoRole } from "@/lib/demo-accounts"
+import { demoAuthAllowed } from "@/lib/auth"
 import { stripeConfigured } from "@/lib/stripe"
+import { fetchConnectStatus, startConnectOnboarding } from "@/lib/money-api"
+import { registerPushToken } from "@/lib/push"
+import { livekitConfigured } from "@/lib/livekit"
 import { space } from "@/theme/vessel"
 
 export default function SettingsScreen() {
@@ -29,7 +34,24 @@ export default function SettingsScreen() {
     demoRole,
     say,
     moneyBadge,
+    authUserId,
+    refreshFromServer,
   } = useApp()
+  const [connectStatus, setConnectStatus] = useState<string>("—")
+
+  useEffect(() => {
+    ;(async () => {
+      const id = authUserId || user.address
+      if (!id) return
+      const st = await fetchConnectStatus(id)
+      if (!st?.stripe_account_id) setConnectStatus("NOT LINKED")
+      else if (st.stripe_payouts_enabled) setConnectStatus("PAYOUTS ON")
+      else setConnectStatus("ONBOARDING")
+      if (prefs.nGifts || prefs.nLive || prefs.nCourt) {
+        await registerPushToken(id)
+      }
+    })()
+  }, [authUserId, user.address, prefs.nGifts, prefs.nLive, prefs.nCourt])
 
   const switchDemo = (role: DemoRole) => {
     Alert.alert(
@@ -205,6 +227,56 @@ export default function SettingsScreen() {
           </Label>
         </Row>
         <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Stripe Connect
+          </UiText>
+          <Label style={{ color: v.dim }}>{connectStatus}</Label>
+        </Row>
+        <Hairline />
+        <Row style={styles.row}>
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            LiveKit
+          </UiText>
+          <Label style={{ color: livekitConfigured() ? v.lim : v.dim }}>
+            {livekitConfigured() ? "READY" : "NOT SET"}
+          </Label>
+        </Row>
+        <Hairline />
+        {caste !== "lord" ? (
+          <>
+            <Pressable
+              onPress={async () => {
+                try {
+                  const url = await startConnectOnboarding("obol://wallet")
+                  await Linking.openURL(url)
+                } catch (e: any) {
+                  say(e?.message || "Connect onboarding failed")
+                }
+              }}
+              style={styles.row}
+            >
+              <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+                Set up cash-out (Connect)
+              </UiText>
+              <Label style={{ color: v.amb }}>→</Label>
+            </Pressable>
+            <Hairline />
+          </>
+        ) : null}
+        <Pressable
+          onPress={async () => {
+            await refreshFromServer()
+            say("Balance refreshed")
+          }}
+          style={styles.row}
+        >
+          <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
+            Refresh balance from server
+          </UiText>
+          <Label style={{ color: v.amb }}>↻</Label>
+        </Pressable>
+        <Hairline />
         <Pressable onPress={() => router.push("/(app)/deposit")} style={styles.row}>
           <UiText weight="semi" style={{ flex: 1, fontSize: 14 }}>
             Add gold
@@ -212,35 +284,39 @@ export default function SettingsScreen() {
           <Label style={{ color: v.amb }}>→</Label>
         </Pressable>
 
-        <Label style={{ marginTop: space.sectionGap }}>SWITCH ACCOUNT</Label>
-        <Hairline />
-        <Pressable
-          onPress={() => switchDemo("vagrant")}
-          style={styles.row}
-          disabled={demoRole === "vagrant"}
-        >
-          <View style={{ flex: 1 }}>
-            <UiText weight="semi" style={{ fontSize: 14 }}>
-              Enter as Vagrant
-            </UiText>
-            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.vagrant.user.handle} · peasant</Label>
-          </View>
-          <Label style={{ color: demoRole === "vagrant" ? v.lim : v.amb }}>
-            {demoRole === "vagrant" ? "ACTIVE" : "SWITCH"}
-          </Label>
-        </Pressable>
-        <Hairline />
-        <Pressable onPress={() => switchDemo("lord")} style={styles.row} disabled={demoRole === "lord"}>
-          <View style={{ flex: 1 }}>
-            <UiText weight="semi" style={{ fontSize: 14 }}>
-              Enter as Lord
-            </UiText>
-            <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.lord.user.handle} · lord</Label>
-          </View>
-          <Label style={{ color: demoRole === "lord" ? v.amb : v.lim }}>
-            {demoRole === "lord" ? "ACTIVE" : "SWITCH"}
-          </Label>
-        </Pressable>
+        {demoAuthAllowed() ? (
+          <>
+            <Label style={{ marginTop: space.sectionGap }}>SWITCH ACCOUNT</Label>
+            <Hairline />
+            <Pressable
+              onPress={() => switchDemo("vagrant")}
+              style={styles.row}
+              disabled={demoRole === "vagrant"}
+            >
+              <View style={{ flex: 1 }}>
+                <UiText weight="semi" style={{ fontSize: 14 }}>
+                  Enter as Vagrant
+                </UiText>
+                <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.vagrant.user.handle} · peasant</Label>
+              </View>
+              <Label style={{ color: demoRole === "vagrant" ? v.lim : v.amb }}>
+                {demoRole === "vagrant" ? "ACTIVE" : "SWITCH"}
+              </Label>
+            </Pressable>
+            <Hairline />
+            <Pressable onPress={() => switchDemo("lord")} style={styles.row} disabled={demoRole === "lord"}>
+              <View style={{ flex: 1 }}>
+                <UiText weight="semi" style={{ fontSize: 14 }}>
+                  Enter as Lord
+                </UiText>
+                <Label style={{ marginTop: 4 }}>@{DEMO_ACCOUNTS.lord.user.handle} · lord</Label>
+              </View>
+              <Label style={{ color: demoRole === "lord" ? v.amb : v.lim }}>
+                {demoRole === "lord" ? "ACTIVE" : "SWITCH"}
+              </Label>
+            </Pressable>
+          </>
+        ) : null}
 
         <Label style={{ marginTop: space.sectionGap }}>SUPPORT</Label>
         <Hairline />
